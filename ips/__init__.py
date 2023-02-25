@@ -34,9 +34,9 @@ def from_file(filename) -> Powerstand:
     with open(filename, "r") as fin:
         raw_data = fin.read()
     return from_json(raw_data)
-    
+
+
 def from_log(filename, step) -> Powerstand:
     with open(filename, "rb") as fin:
-        raw_data = orjson.loads(fin.read()) 
+        raw_data = orjson.loads(fin.read())
     return Powerstand(raw_data[step]['powerstand'])
-

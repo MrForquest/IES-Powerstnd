@@ -13,6 +13,7 @@ __all__ = [
     "Diesel", "Cell",
 ]
 
+
 def pretty_bool(v):
     return 'вкл.' if v else 'выкл.'
 
@@ -83,7 +84,8 @@ Object.__str__ = lambda self: f"{self.type} ({self.power.now}, {self.score.now})
 Line = namedtuple("Line", ("id", "line"))
 Line.__str__ = lambda self: f"{self.id}-{self.line}"
 
-Powerline = namedtuple("Powerline", ("location", "online", "upflow", "downflow", "losses", "wear", "broken", "id"))
+Powerline = namedtuple("Powerline", (
+"location", "online", "upflow", "downflow", "losses", "wear", "broken", "id"))
 Powerline.__str__ = lambda self: f"{self.location} ({pretty_bool(self.online)})"
 # TODO: более качественный str для Powerline
 
@@ -156,7 +158,6 @@ def make_forecast_set(d):
 
 
 class Powerstand:
-
     GRAPH_COUNT = 4
 
     def __init__(self, data, bloat_fields=False):
@@ -177,10 +178,10 @@ class Powerstand:
         self.wind = from_chipping(data['weatherWind'])
         self.sun = from_chipping(data['weatherSun'])
 
-        self.objects = [make_object(obj, self.__station_index, 
-                                    self.__storage_index, self.__tps_index) 
+        self.objects = [make_object(obj, self.__station_index,
+                                    self.__storage_index, self.__tps_index)
                         for obj in data["objs"]]
-        self.networks = {i+1: make_powerline(pl) for (i, pl) in enumerate(data["nets"])}
+        self.networks = {i + 1: make_powerline(pl) for (i, pl) in enumerate(data["nets"])}
         raw_fc = data["forecasts"]
         self.forecasts = Forecasts(
             make_forecast_set(raw_fc["sfClass1"]),
@@ -200,7 +201,7 @@ class Powerstand:
 
         if bloat_fields:
             self.scoreTotal = sum(map(lambda x: Receipt(**x["total"]),
-                                  data["scores"][0][1]["then"]),
+                                      data["scores"][0][1]["then"]),
                                   self.scoreDelta)
             self.topo = {c.location: i for (i, c) in self.networks.items()}
 
@@ -340,7 +341,7 @@ class Powerstand:
             Powerstand.__warn_tb("Несовместимое с float значение в графике. "
                                  "Заменено на 0.", cut=5)
             return 0
-        
+
     def __add_graph(self, idx, values):
         if not (0 <= idx < self.GRAPH_COUNT):
             self.__warn_tb("Неверный номер плоскости для добавления графика. "
