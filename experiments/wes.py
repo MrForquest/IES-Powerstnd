@@ -10,11 +10,11 @@ class WES:
 
     def preprocess_data(self, data):
         wind_array_ = data
-        wind_array_ = wind_array_ ** 3
+        wind_array_ = wind_array_**3
         wind_data_ = list()
         for i in range(self.n_values):
             wind_last_ = np.roll(wind_array_, i)
-            wind_last_[0:(i + 1)] = 0
+            wind_last_[0 : (i + 1)] = 0
             wind_data_.append(wind_last_)
         new_wind_ = list()
         for i in range(len(wind_array_)):
@@ -34,7 +34,7 @@ class WES:
         return energy
 
     def predict_many(self, tick_start, tick_end, data):
-        wind_processed = self.preprocess_data(data["wind"])[tick_start: tick_end]
+        wind_processed = self.preprocess_data(data["wind"])[tick_start:tick_end]
         energy = self.model.predict(wind_processed)
         energy = np.maximum(energy, 0)
         energy = np.minimum(energy, 15)

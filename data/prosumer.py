@@ -1,3 +1,6 @@
+from data.base import Base
+
+
 class Prosumer(Base):
     def __init__(self, name, connections=None):
         if connections is None:
@@ -9,4 +12,4 @@ class Prosumer(Base):
         return 0
 
     def __repr__(self):
-        return f"Prosumer(\"{self.name}\")"
+        return f'Prosumer("{self.name}")'

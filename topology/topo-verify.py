@@ -55,10 +55,10 @@ def verify(d):
                 main_station = station
             elif station != main_station:
                 fail("Две главных подстанции –", station, "и", main_station)
-        elif station[0] == 'm':
+        elif station[0] == "m":
             if not (1 <= line <= 2):
                 fail_n(i, "На подстанции", station, "нет ветки с номером", line)
-        elif station[0] == 'e':
+        elif station[0] == "e":
             if not (1 <= line <= 3):
                 fail_n(i, "На подстанции", station, "нет ветки с номером", line)
         else:
@@ -70,7 +70,7 @@ def verify(d):
     if main_station is None:
         fail("Нет главной подстанции")
 
-    for ((st, sl), line_objs) in topo.items():
+    for (st, sl), line_objs in topo.items():
         f_prod, f_gen = False, False
         for x in line_objs:
             if x[0] in "hdfb":
@@ -87,13 +87,13 @@ def verify(d):
     # А проверку на разные ветки больницы делайте сами ;)
 
     print("Главная подстанция:", main_station)
-    for (c, name) in obj_types:
+    for c, name in obj_types:
         xs = sorted(x for x in objs if x[0] == c)
         if xs:
             print(name + ":", " ".join(xs))
     print()
     topos = sorted(topo.items(), key=lambda x: ("Mme".find(x[0][0][0]), x[0]))
-    for ((st, sl), objs) in topos:
+    for (st, sl), objs in topos:
         print(f"{st}-{sl}:", " ".join(sorted(objs)))
 
 
@@ -119,21 +119,17 @@ def generate(s: str, filename="topo"):
                 main_station = station
             elif station != main_station:
                 fail("Две главных подстанции –", station, "и", main_station)
-        elif station[0] == 'm':
+        elif station[0] == "m":
             if not (1 <= line <= 2):
                 fail_n(i, "На подстанции", station, "нет ветки с номером", line)
-        elif station[0] == 'e':
+        elif station[0] == "e":
             if not (1 <= line <= 3):
                 fail_n(i, "На подстанции", station, "нет ветки с номером", line)
         else:
             fail_n(i, "Подстанции", station, "не существует")
 
         for obj in toks.split():
-            d.append({
-                "station": station,
-                "line": line,
-                "address": obj
-            })
+            d.append({"station": station, "line": line, "address": obj})
     verify(d)
     with open(filename + ".json", "w") as fout:
         json.dump(d, fout, indent=2)

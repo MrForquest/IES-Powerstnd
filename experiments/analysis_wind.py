@@ -6,10 +6,19 @@ import os
 from wes import WES
 from sklearn.metrics import mean_squared_error
 
-names = ["gen-final-1.csv", "gen-final-n1.csv", "gen-mar11-2.csv", "gen-mar10-4.csv",
-         "gen-mar10-2.csv", "gen-mar10-1.csv", "gen-mar-09-3.csv", "gen-mar-09-2.csv",
-         "gen-mar-09-1.csv", "game-mar08.csv"]
-path = '../forecast/'
+names = [
+    "gen-final-1.csv",
+    "gen-final-n1.csv",
+    "gen-mar11-2.csv",
+    "gen-mar10-4.csv",
+    "gen-mar10-2.csv",
+    "gen-mar10-1.csv",
+    "gen-mar-09-3.csv",
+    "gen-mar-09-2.csv",
+    "gen-mar-09-1.csv",
+    "game-mar08.csv",
+]
+path = "../forecast/"
 train_names, test_names = names[4:], names[:4]
 
 data = pd.DataFrame()
@@ -35,8 +44,9 @@ errors = list()
 for flnd in data_dict.keys():
     wind_station = WES("a5")
     wind_station.train(curr_data)
-    mean_error = mean_squared_error(data_dict[flnd]["a5"],
-                                    wind_station.predict_many(0, 101, data_dict[flnd]))
+    mean_error = mean_squared_error(
+        data_dict[flnd]["a5"], wind_station.predict_many(0, 101, data_dict[flnd])
+    )
     errors.append(mean_error)
     print(flnd, mean_error)
 print(sum(errors) / len(errors))

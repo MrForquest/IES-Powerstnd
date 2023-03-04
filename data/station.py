@@ -1,3 +1,9 @@
+from data.base import Base
+from data.line import Line
+from data.energy_region import EnergyRegion
+from typing import List
+
+
 class Station(Base):
     def __init__(self, name, connections=None, lines_=None):
         if connections is None:
@@ -6,15 +12,26 @@ class Station(Base):
             lines_ = list()
         super().__init__(name, connections)
         self.lines = lines_
+        self.networks = list()
+        self.update_networks()
+        self.id = name
+
+    def get_networks(self):
+        return self.networks
+
+    def update_networks(self):
+        self.networks = [EnergyRegion(line) for line in self.lines]
 
     def set_lines(self, lines: List[Line]):
         self.lines = lines
+        self.update_networks()
 
     def get_lines(self):
         return self.lines
 
     def append_line(self, line: Line):
         self.lines.append(line)
+        self.update_networks()
 
     def __repr__(self):
-        return f"Station(\"{self.name}\")"
+        return f'Station("{self.name}")'

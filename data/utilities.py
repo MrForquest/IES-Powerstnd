@@ -1,5 +1,20 @@
+
+
 def get_energy_loss(energy):
     return energy * 0.1
+
+
+def get_column(name, file):
+    values = list()
+    dfs = list()
+    df = pd.read_csv(path + file)
+    df = df.fillna(0)
+    df[df < 0] = 0
+    # print(df[name])
+    values.extend(df[name])
+    return values
+
+
 
 
 # tree classifier to dict
@@ -12,17 +27,17 @@ def export_dict(clf, feature_names=None):
     # Build tree nodes
     tree_nodes = []
     for i in range(tree.node_count):
-        if (tree.children_left[i] == tree.children_right[i]):
-            tree_nodes.append(
-                clf.classes_[np.argmax(tree.value[i])]
-            )
+        if tree.children_left[i] == tree.children_right[i]:
+            tree_nodes.append(clf.classes_[np.argmax(tree.value[i])])
         else:
-            tree_nodes.append({
-                "feature": feature_names[tree.feature[i]],
-                "value": tree.threshold[i],
-                "left": tree.children_left[i],
-                "right": tree.children_right[i],
-            })
+            tree_nodes.append(
+                {
+                    "feature": feature_names[tree.feature[i]],
+                    "value": tree.threshold[i],
+                    "left": tree.children_left[i],
+                    "right": tree.children_right[i],
+                }
+            )
 
     # Link tree nodes
     for node in tree_nodes:
@@ -36,6 +51,7 @@ def export_dict(clf, feature_names=None):
 
 
 from sklearn.tree import _tree
+
 
 def tree_to_code(tree, feature_names):
     tree_ = tree.tree_

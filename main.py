@@ -1,12 +1,14 @@
 import json
 from typing import List
 
-data = [{"address": "h1", "station": "M1", "line": 1},
-        {"address": "t1", "station": "M1", "line": 2},
-        {"address": "m2", "station": "M1", "line": 3},
-        {"address": "h2", "station": "m2", "line": 1},
-        {"address": "h3", "station": "m2", "line": 2},
-        {"address": "h4", "station": "m2", "line": 2}]
+data = [
+    {"address": "h1", "station": "M1", "line": 1},
+    {"address": "t1", "station": "M1", "line": 2},
+    {"address": "m2", "station": "M1", "line": 3},
+    {"address": "h2", "station": "m2", "line": 1},
+    {"address": "h3", "station": "m2", "line": 2},
+    {"address": "h4", "station": "m2", "line": 2},
+]
 
 
 class Line:
@@ -53,7 +55,7 @@ class Prosumer(Base):
         return 0
 
     def __repr__(self):
-        return f"Prosumer(\"{self.name}\")"
+        return f'Prosumer("{self.name}")'
 
 
 class Station(Base):
@@ -75,7 +77,7 @@ class Station(Base):
         self.lines.append(line)
 
     def __repr__(self):
-        return f"Station(\"{self.name}\")"
+        return f'Station("{self.name}")'
 
 
 def get_energy_loss(energy):
@@ -91,16 +93,24 @@ class Powerstand:
         self.st_names = list(set([na for na in names if na[0] in ("m", "e", "M")]))
         self.prosumer_names = list(set([na for na in names if na[0] not in ("m", "e")]))
         self.all_stations = []
-        self.prosumers = [Prosumer(na) for na in self.prosumer_names if na[0] not in ("m", "e")]
+        self.prosumers = [
+            Prosumer(na) for na in self.prosumer_names if na[0] not in ("m", "e")
+        ]
         self.all_stations = [Station(stn) for stn in self.st_names]
         self.objects = {obj.name: obj for obj in (self.prosumers + self.all_stations)}
-        self.main_st = filter(lambda stn_: stn_.name == "M1", self.all_stations).__next__()
+        self.main_st = filter(
+            lambda stn_: stn_.name == "M1", self.all_stations
+        ).__next__()
         self.all_lines = list()
-        line_names = list(set([" ".join((line["station"], str(line["line"]))) for line in topology]))
+        line_names = list(
+            set([" ".join((line["station"], str(line["line"]))) for line in topology])
+        )
         for line_name in line_names:
             st_name, line_id = line_name.split()
             line_id = int(line_id)
-            lines = filter(lambda li: li["station"] == st_name and li["line"] == line_id, topology)
+            lines = filter(
+                lambda li: li["station"] == st_name and li["line"] == line_id, topology
+            )
             station = self.get_object(st_name)
             line_obj = Line(station, line_id=line_id)
             for line in lines:

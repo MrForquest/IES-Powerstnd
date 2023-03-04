@@ -1,3 +1,6 @@
+from data.line import Line
+
+
 class Base:
     def __init__(self, name, connections):
         self.name = name
