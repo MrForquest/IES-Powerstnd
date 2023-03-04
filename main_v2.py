@@ -15,3 +15,15 @@ print("12")
 powerstand.run()
 print(powerstand.all_stations[0].get_lines())
 print(powerstand.all_stations[0].networks)
+
+# mode - "predict_money"(Дима)/"test_strategy"(Серёжа)
+config = {
+    "topology": "path_to_file.json",
+    "forecasts": "path_to_file.csv",
+    "gen_file": "path_to_file.csv",
+    "prices": {
+        "h1": 12,
+        "h3": 13,
+    },
+    "mode": "test_strategy",
+}

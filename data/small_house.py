@@ -22,4 +22,4 @@ class SmallHouse(Base):
         return self.price
 
     def __repr__(self):
-        return f"SmallHouse(\"{self.name}\")"
+        return f'SmallHouse("{self.name}")'

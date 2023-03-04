@@ -1,5 +1,3 @@
-
-
 def get_energy_loss(energy):
     return energy * 0.1
 
@@ -13,8 +11,6 @@ def get_column(name, file):
     # print(df[name])
     values.extend(df[name])
     return values
-
-
 
 
 # tree classifier to dict

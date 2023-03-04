@@ -8,6 +8,7 @@ __all__ = ["init", "init_test", "from_json", "from_file", "Powerstand"]
 
 def get_library_path():
     import os
+
     path = os.path.abspath(__file__)
     return os.path.dirname(path)
 
@@ -22,6 +23,7 @@ def init() -> Powerstand:
 
 def init_test() -> Powerstand:
     from .test import stub_input
+
     return from_json(stub_input)
 
 
@@ -39,4 +41,4 @@ def from_file(filename) -> Powerstand:
 def from_log(filename, step) -> Powerstand:
     with open(filename, "rb") as fin:
         raw_data = orjson.loads(fin.read())
-    return Powerstand(raw_data[step]['powerstand'])
+    return Powerstand(raw_data[step]["powerstand"])

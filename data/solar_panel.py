@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from data.base import Base
 
 
 class SolarPanel(Base):
@@ -22,7 +23,11 @@ class SolarPanel(Base):
         x_fit = x_fit.reshape(-1, 1)
         self.regr = LinearRegression()
         self.regr.fit(x_fit, y_fit)
-        print(self.regr.predict(np.array(get_column("Солнце: 8", game_file)).reshape(-1, 1)))
+        print(
+            self.regr.predict(
+                np.array(get_column("Солнце: 8", game_file)).reshape(-1, 1)
+            )
+        )
 
     def get_column_learn(self, name, files):
         values = list()
@@ -38,7 +43,9 @@ class SolarPanel(Base):
         return values
 
     def get_energy(self, tick):
-        energy = self.regr.predict(np.array([get_column("Солнце: 8", game_file)[tick]]).reshape(-1, 1))
+        energy = self.regr.predict(
+            np.array([get_column("Солнце: 8", game_file)[tick]]).reshape(-1, 1)
+        )
         if energy <= 0:
             return 0
         else:
@@ -51,4 +58,4 @@ class SolarPanel(Base):
         return -self.price
 
     def __repr__(self):
-        return f"SolarPanel(\"{self.name}\")"
+        return f'SolarPanel("{self.name}")'
