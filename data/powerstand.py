@@ -1,15 +1,18 @@
 from data.line import Line
 from data.prosumer import Prosumer
 from data.station import Station
-from data.utilities import get_energy_loss, StationEnergy
+from data.station_energy import StationEnergy
+from data.utilities import get_energy_loss
 
 
 class Powerstand:
-    def __init__(self, topology, game_info=None):
+    def __init__(self, config):
+        self.config = config
+        topology = self.config["topology"]
+
         names = list()
         for d in topology:
             names.extend((d["station"], d["address"]))
-
         self.all_names = list(set(names))
         self.st_names = list(set([na for na in names if na[0] in ("m", "e", "M")]))
         self.prosumer_names = list(set([na for na in names if na[0] not in ("m", "e")]))
@@ -42,6 +45,11 @@ class Powerstand:
             station.append_line(line_obj)
             self.all_lines.append(line_obj)
 
+        self.init_objects()
+
+    def init_objects(self):
+        pass
+
     def get_object(self, name):
         return self.objects[name]
 
@@ -60,7 +68,7 @@ class Powerstand:
             else:
                 line_energy = 0
                 for addr in addresses:
-                    line_energy += addr.get_energy()
+                    line_energy += addr.get_energy(tick)
 
                 if line_energy > 0:
                     st_energy.upflow += line_energy
@@ -73,3 +81,12 @@ class Powerstand:
         print(self.all_lines)
         energy = self.tree_traversal_rec(self.main_st)
         print(energy)
+
+
+# Серёжа хочет видеть такие МЕТОДЫ у соотвующих объектов(SolarPanel, SmallHouse и другие)
+class SomeObject:
+    def set_data(self, data):
+        ...
+
+    def get_energy(self, tick):
+        ...

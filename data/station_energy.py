@@ -1,3 +1,6 @@
+import copy
+
+
 class StationEnergy:
     def __init__(self, upflow=0, downflow=0, losses=0):
         self.upflow = upflow

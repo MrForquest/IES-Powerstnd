@@ -1,7 +1,7 @@
 import json
 from data.powerstand import Powerstand
 
-data = [
+topology = [
     {"address": "h1", "station": "M1", "line": 1},
     {"address": "t1", "station": "M1", "line": 2},
     {"address": "m2", "station": "M1", "line": 3},
@@ -10,7 +10,7 @@ data = [
     {"address": "h4", "station": "m2", "line": 2},
 ]
 
-powerstand = Powerstand(data)
+powerstand = Powerstand(topology)
 print("12")
 powerstand.run()
 print(powerstand.all_stations[0].get_lines())
@@ -18,7 +18,7 @@ print(powerstand.all_stations[0].networks)
 
 # mode - "predict_money"(Дима)/"test_strategy"(Серёжа)
 config = {
-    "topology": "path_to_file.json",
+    "topology": topology,
     "forecasts": "path_to_file.csv",
     "gen_file": "path_to_file.csv",
     "prices": {
