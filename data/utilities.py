@@ -1,5 +1,7 @@
 def get_energy_loss(energy):
-    return energy * 0.1
+    a = min(abs(energy), 30)
+    loss = ((abs(energy) * a) / 30) * 0.25
+    return -loss
 
 
 def get_column(name, file):

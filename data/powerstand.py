@@ -1,3 +1,5 @@
+import random
+
 from data.line import Line
 from data.prosumer import Prosumer
 from data.station import Station
@@ -58,8 +60,13 @@ class Powerstand:
 
         networks = station.get_networks()
         for net in networks:
+            if net.broken:
+                net.decrement_cooldown()
+                # todo штрафы
             if not net.online:
                 net.upflow, net.downflow, net.losses = 0, 0, 0
+                # todo штрафы
+                continue
             addresses = net.line.get_address()
             print(addresses)
             if isinstance(addresses[0], Station):
@@ -75,6 +82,12 @@ class Powerstand:
                 elif line_energy < 0:
                     st_energy.downflow += line_energy
                 st_energy.losses += get_energy_loss(line_energy)
+
+            net.calc_wear(st_energy.total_energy)
+            chance = random.random()
+            if net.prob_broken() < chance:
+                net.broken = True
+                net.break_net()
         return st_energy
 
     def run(self):

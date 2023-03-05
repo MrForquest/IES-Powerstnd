@@ -9,7 +9,7 @@ class StationEnergy:
 
     @property
     def total_energy(self):
-        return self.upflow + self.downflow
+        return self.upflow + self.downflow + self.losses
 
     def __radd__(self, other):
         self.upflow += other.upflow
