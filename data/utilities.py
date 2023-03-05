@@ -7,7 +7,7 @@ def get_energy_loss(energy):
 def get_column(name, file):
     values = list()
     dfs = list()
-    df = pd.read_csv(path + file)
+    df = pd.read_csv("forecast/" + file)
     df = df.fillna(0)
     df[df < 0] = 0
     # print(df[name])
