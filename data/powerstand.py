@@ -95,7 +95,7 @@ class Powerstand:
         for i in range(100):
             self.tick = i
             energy = self.tree_traversal_rec(self.main_st)
-            if energy.total_energy() < 0:
+            if energy.total_energy < 0:
                 self.total_money -= 5
             else:
                 self.total_money += 5
