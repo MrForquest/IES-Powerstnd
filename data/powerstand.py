@@ -8,6 +8,7 @@ from data.utilities import get_energy_loss, get_column
 from data.small_house import SmallHouse
 from data.solar_panel import SolarPanel
 from random import randint
+from data.factory import Factory, FactoryOutput
 
 
 class Powerstand:
@@ -23,9 +24,12 @@ class Powerstand:
         self.all_names = list(set(names))
         self.st_names = list(set([na for na in names if na[0] in ("m", "e", "M")]))
         self.prosumer_names = list(set([na for na in names if na[0] not in ("m", "e", "s", "M")]))
-        # self.small_houses = [SmallHouse(na) for na in self.prosumer_names if na[0] in "h"]
+        self.factories = list()
+        self.factories_outputs = [FactoryOutput(na) for na in self.prosumer_names if na[0] in "f"]
+
+        # self.small_houses = [SolarPanel(na) for na in self.prosumer_names if na[0] in "s"]
         self.panels = [SolarPanel(na) for na in self.prosumer_names if na[0] in "s"]
-        self.all_stations = []
+        self.all_stations = list()
         self.prosumers = [Prosumer(na) for na in self.prosumer_names if na[0] not in ("m", "e", "s", "M")]
         self.all_stations = [Station(stn) for stn in self.st_names]
         self.objects = {obj.name: obj for obj in (self.prosumers + self.panels + self.all_stations)}
@@ -46,6 +50,7 @@ class Powerstand:
                 address.append_connection(line_obj)
             station.append_line(line_obj)
             self.all_lines.append(line_obj)
+
 
         self.init_objects()
 
