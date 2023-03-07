@@ -12,6 +12,7 @@ class EnergyRegion:
         self.losses = 0
         self.broken = False
         self.line = line
+        self.line.net = self
         self.max_cooldown = 5
         self.cooldown = 0
 

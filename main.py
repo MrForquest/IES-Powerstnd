@@ -93,14 +93,10 @@ class Powerstand:
         self.st_names = list(set([na for na in names if na[0] in ("m", "e", "M")]))
         self.prosumer_names = list(set([na for na in names if na[0] not in ("m", "e")]))
         self.all_stations = []
-        self.prosumers = [
-            Prosumer(na) for na in self.prosumer_names if na[0] not in ("m", "e")
-        ]
+        self.prosumers = [Prosumer(na) for na in self.prosumer_names if na[0] not in ("m", "e")]
         self.all_stations = [Station(stn) for stn in self.st_names]
         self.objects = {obj.name: obj for obj in (self.prosumers + self.all_stations)}
-        self.main_st = filter(
-            lambda stn_: stn_.name == "M1", self.all_stations
-        ).__next__()
+        self.main_st = filter(lambda stn_: stn_.name == "M1", self.all_stations).__next__()
         self.all_lines = list()
         line_names = list(
             set([" ".join((line["station"], str(line["line"]))) for line in topology])
@@ -108,9 +104,7 @@ class Powerstand:
         for line_name in line_names:
             st_name, line_id = line_name.split()
             line_id = int(line_id)
-            lines = filter(
-                lambda li: li["station"] == st_name and li["line"] == line_id, topology
-            )
+            lines = filter(lambda li: li["station"] == st_name and li["line"] == line_id, topology)
             station = self.get_object(st_name)
             line_obj = Line(station, line_id=line_id)
             for line in lines:

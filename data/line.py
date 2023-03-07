@@ -5,6 +5,7 @@ class Line:
         self.station = station
         self.address = address
         self.line_id = line_id
+        self.net = None
 
     def append_address(self, address):
         self.address.append(address)

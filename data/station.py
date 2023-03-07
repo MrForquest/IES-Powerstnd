@@ -13,8 +13,9 @@ class Station(Base):
         super().__init__(name, connections)
         self.lines = lines_
         self.networks = list()
-        self.update_networks()
         self.id = name
+        self.now_available = True
+        self.update_networks()
 
     def get_networks(self):
         return self.networks

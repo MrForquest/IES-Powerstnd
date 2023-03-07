@@ -71,20 +71,16 @@ def __add_receipt(self, x):
 
 ExchangeReceipt = namedtuple("ExchangeReceipt", ("source", "flux", "price"))
 ExchangeReceipt.__str__ = (
-    lambda self: f"{pretty_source(self.source)} "
-    f"({self.flux:.2f} МВт, {self.price:.2f} ₽/МВт)"
+    lambda self: f"{pretty_source(self.source)} " f"({self.flux:.2f} МВт, {self.price:.2f} ₽/МВт)"
 )
 
-Forecasts = namedtuple(
-    "Forecasts", ("hospital", "factory", "houseA", "houseB", "sun", "wind")
-)
+Forecasts = namedtuple("Forecasts", ("hospital", "factory", "houseA", "houseB", "sun", "wind"))
 
 TotalPower = namedtuple("TotalPower", ("generated", "consumed", "external", "losses"))
 
 Power = namedtuple("Line", ("generated", "consumed", "online"))
 Power.__str__ = (
-    lambda self: f"{pretty_bool(self.online)} "
-    f"(+{self.generated} МВт⋅ч -{self.consumed} МВт⋅ч)"
+    lambda self: f"{pretty_bool(self.online)} " f"(+{self.generated} МВт⋅ч -{self.consumed} МВт⋅ч)"
 )
 Power.total = lambda self: self.generated - self.consumed
 
@@ -145,9 +141,7 @@ def make_object(d, stations, storages, thermos):
         id=d["id"],
         address=tuple(d["address"]),
         contract=d["contract"],
-        path=tuple(
-            tuple(Line(tuple(l["id"]), l["line"]) for l in a) for a in d["path"]
-        ),
+        path=tuple(tuple(Line(tuple(l["id"]), l["line"]) for l in a) for a in d["path"]),
         score=make_historic(d["score"], Receipt),
         power=make_historic(d["power"], Power),
         charge=make_historic_(d["charge"], float),
@@ -192,9 +186,7 @@ class Powerstand:
         self.__storage_index = dict()
         self.__tps_index = dict()
         self.__user_data = [[] for _ in range(self.GRAPH_COUNT)]
-        self.raw_data = (
-            data  # NOTE: deepcopy не делается, потому что долго и бесполезно
-        )
+        self.raw_data = data  # NOTE: deepcopy не делается, потому что долго и бесполезно
 
         self.config = data["conf"]
         self.tick = data["tick"]
@@ -207,14 +199,10 @@ class Powerstand:
         self.sun = from_chipping(data["weatherSun"])
 
         self.objects = [
-            make_object(
-                obj, self.__station_index, self.__storage_index, self.__tps_index
-            )
+            make_object(obj, self.__station_index, self.__storage_index, self.__tps_index)
             for obj in data["objs"]
         ]
-        self.networks = {
-            i + 1: make_powerline(pl) for (i, pl) in enumerate(data["nets"])
-        }
+        self.networks = {i + 1: make_powerline(pl) for (i, pl) in enumerate(data["nets"])}
         raw_fc = data["forecasts"]
         self.forecasts = Forecasts(
             make_forecast_set(raw_fc["sfClass1"]),
@@ -274,15 +262,12 @@ class Powerstand:
                 return
         except ValueError:
             self.__warn_tb(
-                "Для приказа на дизель нужен float-совместимый "
-                "тип. Приказ не принят.",
+                "Для приказа на дизель нужен float-совместимый " "тип. Приказ не принят.",
                 cut=3,
             )
             return
         if not self.__check_address(address):
-            self.__warn_tb(
-                "Такой подстанции не существует. " "Приказ не принят.", cut=3
-            )
+            self.__warn_tb("Такой подстанции не существует. " "Приказ не принят.", cut=3)
             return
         self.__orders.append({"orderT": "diesel", "address": address, "power": power})
 
@@ -290,9 +275,7 @@ class Powerstand:
         try:
             power = float(power)
             if power < 0:
-                self.__warn_tb(
-                    "Отрицательное значение энергии на ТЭС. " "Приказ не принят.", cut=3
-                )
+                self.__warn_tb("Отрицательное значение энергии на ТЭС. " "Приказ не принят.", cut=3)
                 return
         except ValueError:
             self.__warn_tb(
@@ -310,15 +293,13 @@ class Powerstand:
             power = float(power)
             if power < 0:
                 self.__warn_tb(
-                    "Отрицательное значение энергии в приказе на аккумулятор. "
-                    "Приказ не принят.",
+                    "Отрицательное значение энергии в приказе на аккумулятор. " "Приказ не принят.",
                     cut=3,
                 )
                 return
         except ValueError:
             self.__warn_tb(
-                "Для приказа на аккумулятор нужен float-совместимый "
-                "тип. Приказ не принят.",
+                "Для приказа на аккумулятор нужен float-совместимый " "тип. Приказ не принят.",
                 cut=3,
             )
             return
@@ -336,8 +317,7 @@ class Powerstand:
             amount = float(amount)
             if amount < 0:
                 self.__warn_tb(
-                    "Неположительное значение энергии в заявке на биржу. "
-                    "Приказ не принят.",
+                    "Неположительное значение энергии в заявке на биржу. " "Приказ не принят.",
                     cut=3,
                 )
                 return
@@ -352,8 +332,7 @@ class Powerstand:
             price = float(price)
             if price < 0:
                 self.__warn_tb(
-                    "Неположительное значение стоимости в заявке на биржу. "
-                    "Приказ не принят.",
+                    "Неположительное значение стоимости в заявке на биржу. " "Приказ не принят.",
                     cut=3,
                 )
                 return
@@ -371,9 +350,7 @@ class Powerstand:
         try:
             line_obj = self.__station_index[address]
         except KeyError:
-            self.__warn_tb(
-                "Запрос на линию несуществующей подстанции. " "Приказ не принят.", cut=3
-            )
+            self.__warn_tb("Запрос на линию несуществующей подстанции. " "Приказ не принят.", cut=3)
             return
         order = "lineOn" if value else "lineOff"
         self.__orders.append(
@@ -407,9 +384,7 @@ class Powerstand:
         try:
             v = float(v)
             if not math.isfinite(v):
-                Powerstand.__warn_tb(
-                    "Неконечное число в графике. " "Заменено на 0.", cut=5
-                )
+                Powerstand.__warn_tb("Неконечное число в графике. " "Заменено на 0.", cut=5)
                 return 0
             return v
         except ValueError:
@@ -432,8 +407,7 @@ class Powerstand:
     def __warn_tb(error, warning=False, cut=2):
         level = "Предупреждение" if warning else "Ошибка"
         print(
-            "".join(traceback.format_list(traceback.extract_stack()[:-cut]))
-            + f"{level}: {error}",
+            "".join(traceback.format_list(traceback.extract_stack()[:-cut])) + f"{level}: {error}",
             file=sys.stderr,
             flush=True,
         )
@@ -445,15 +419,9 @@ class Powerstand:
     def humanize_order(order):
         type = order["orderT"]
         if type == "lineOn":
-            return (
-                f"включение линии {order['line']['line']} "
-                f"на подстанции {order['address']}"
-            )
+            return f"включение линии {order['line']['line']} " f"на подстанции {order['address']}"
         if type == "lineOff":
-            return (
-                f"выключение линии {order['line']['line']} "
-                f"на подстанции {order['address']}"
-            )
+            return f"выключение линии {order['line']['line']} " f"на подстанции {order['address']}"
         if type == "sell":
             return f"заявка на продажу {order['amount']:.2f} МВт⋅ч за {order['price']:.2f} ₽"
         if type == "buy":
@@ -461,9 +429,7 @@ class Powerstand:
         if type == "diesel":
             return f"установка мощности дизелей {order['address']} в {order['power']:.2f} МВт"
         if type == "TPS":
-            return (
-                f"установка мощности ТЭС {order['address']} в {order['power']:.2f} МВт"
-            )
+            return f"установка мощности ТЭС {order['address']} в {order['power']:.2f} МВт"
         if type == "charge":
             return f"зарядка аккумуляторов {order['address']} на {order['power']:.2f} МВт⋅ч"
         if type == "discharge":

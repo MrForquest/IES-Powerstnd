@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from data.base import Base
 from data.utilities import get_column
-from main_v2 import config
+from config import config
 
 
 class SolarPanel(Base):

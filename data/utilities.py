@@ -1,3 +1,6 @@
+import pandas as pd
+
+
 def get_energy_loss(energy):
     a = min(abs(energy), 30)
     loss = ((abs(energy) * a) / 30) * 0.25
@@ -15,6 +18,7 @@ def get_column(name, file):
     return values
 
 
+"""
 # tree classifier to dict
 # todo do tree regressor
 def export_dict(clf, feature_names=None):
@@ -54,8 +58,7 @@ from sklearn.tree import _tree
 def tree_to_code(tree, feature_names):
     tree_ = tree.tree_
     feature_name = [
-        feature_names[i] if i != _tree.TREE_UNDEFINED else "undefined!"
-        for i in tree_.feature
+        feature_names[i] if i != _tree.TREE_UNDEFINED else "undefined!" for i in tree_.feature
     ]
     print("def tree({}):".format(", ".join(feature_names)))
 
@@ -72,3 +75,4 @@ def tree_to_code(tree, feature_names):
             print("{}return {}".format(indent, tree_.value[node]))
 
     recurse(0, 1)
+"""
