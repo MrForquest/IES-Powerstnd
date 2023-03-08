@@ -152,7 +152,7 @@ class Powerstand:
             if line_energy != 0:
                 net.calc_wear(line_energy)
                 chance = random.random()
-                if net.prob_broken() < chance:
+                if net.prob_broken() > chance:
                     net.broken = True
                     net.break_net()
 

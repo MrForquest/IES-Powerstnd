@@ -17,7 +17,7 @@ class EnergyRegion:
         self.cooldown = 0
 
     def calc_wear(self, energy):
-        x = energy / self.nominal_energy
+        x = abs(energy) / self.nominal_energy
         w = pow(x, 1.9) / 6
         self.wear += w
 
