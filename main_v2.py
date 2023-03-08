@@ -1,4 +1,5 @@
 import json
+import random
 from data.powerstand import Powerstand
 from config import config
 
@@ -15,6 +16,6 @@ data = [
 """
 
 # mode - "predict_money"(Дима)/"test_strategy"(Серёжа)
-
+random.seed(2)
 powerstand = Powerstand(config)
 powerstand.run()

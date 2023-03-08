@@ -89,7 +89,7 @@ class Powerstand:
         self.init_objects()
 
     def init_objects(self):
-        forecast_num = randint(1, 9)
+        forecast_num = 2  # randint(1, 9)
         for obj in self.objects.values():
             if obj.name[0] in "h":
                 obj.set_data(get_column(f"""Дома А: {forecast_num}""", self.config["forecasts"]))
@@ -138,9 +138,12 @@ class Powerstand:
                     energy = addr.get_energy(self.tick)
                     if station.now_available:
                         line_energy += energy
-                        self.total_money += addr.get_price() * energy
+                        if isinstance(addr, FactoryOutput):
+                            self.total_money += addr.factory.get_price() * energy
+                        else:
+                            self.total_money += addr.get_price() * energy
                     else:
-                        print("aaaa",  addr.get_penalty(self.tick))
+                        print("aaaa", addr.get_penalty(self.tick))
                         self.total_money += addr.get_penalty(self.tick)
 
                 if line_energy > 0:

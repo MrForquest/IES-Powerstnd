@@ -6,7 +6,7 @@ class EnergyRegion:
 
     def __init__(self, line):
         self.wear = 0
-        self.online = False
+        self.online = True
         self.upflow = 0
         self.downflow = 0
         self.losses = 0

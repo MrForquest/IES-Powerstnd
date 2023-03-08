@@ -16,12 +16,12 @@ class Factory(Prosumer):
     def check2outputs(self):
         net1 = self.output_obj1.connections[0].net
         check1 = net1.online * (not net1.broken)
-        check2 = True
         if not (self.output_obj2 is None):
             net2 = self.output_obj2.connections[0].net
             check2 = net2.online * (not net2.broken)
-
-        return check1 and check2
+            return check1 and check2
+        else:
+            return check1
 
     def get_energy(self, tick):
         if self.check2outputs:
@@ -32,7 +32,7 @@ class Factory(Prosumer):
     def get_penalty(self, tick):
         net1 = self.output_obj1.connections[0].net
         check1 = net1.online * (not net1.broken)
-        check2 = True
+        check2 = False
         if not (self.output_obj2 is None):
             net2 = self.output_obj2.connections[0].net
             check2 = net2.online * (not net2.broken)
