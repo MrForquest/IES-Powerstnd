@@ -9,6 +9,7 @@ from data.small_house import SmallHouse
 from data.solar_panel import SolarPanel
 from random import randint
 from data.factory import Factory, FactoryOutput
+from data.hospital import Hospital, HospitalOutput
 
 
 class Powerstand:
@@ -35,6 +36,12 @@ class Powerstand:
         self.factories = list()
         self.factories_outputs = [FactoryOutput(na) for na in factories_names]
         # self.small_houses = [SolarPanel(na) for na in self.prosumer_names if na[0] in "s"]
+
+
+        # больницы
+        hospital_names = [na for na in self.prosumer_names if na[0] in "b"]
+        self.hospitals = list()
+        self.hospitals_outputs = [FactoryOutput(na) for na in factories_names]
 
         # дома потребители
         self.prosumers = [
@@ -84,6 +91,25 @@ class Powerstand:
                         fo1 = self.get_object(f_na)
                     new_factory = Factory(fo1, fo2)
                     self.factories.append(new_factory)
+
+        # инициализация объектов Больниц
+        numbers_str = "123456789ABCDEF"
+        numbers_dict = dict(zip(list(numbers_str), range(len(numbers_str))))
+        hospital_names.sort()
+        for i, f_na in enumerate(hospital_names):
+            ind = numbers_dict[f_na[1]]
+            if ind % 2 == 0:
+                if i != len(hospital_names) - 1:
+                    f_na_2 = hospital_names[i + 1]
+                    ind_2 = numbers_dict[f_na_2[1]]
+                    fo2 = None
+                    if ind_2 - ind == 1:
+                        fo1 = self.get_object(f_na)
+                        fo2 = self.get_object(f_na_2)
+                    else:
+                        fo1 = self.get_object(f_na)
+                    new_hospital = Hospital(fo1, fo2)
+                    self.hospitals.append(new_hospital)
 
         print(self.factories)
         self.init_objects()
