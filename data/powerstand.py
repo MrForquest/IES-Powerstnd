@@ -167,10 +167,10 @@ class Powerstand:
             self.tick = i
             self.clean_all_stations()
             energy = self.tree_traversal_rec(self.main_st)
-            # if energy.total_energy < 0:
-            #    self.total_money -= 5
-            # elif energy.total_energy > 0:
-            #    self.total_money += 5
+            if energy.total_energy < 0:
+                self.total_money -= energy.total_energy * (-10)
+            elif energy.total_energy > 0:
+                self.total_money += energy.total_energy * 1
             print(f"""energy for tick {self.tick}: {energy}""")
             print(f"""total money for tick {self.tick}: {self.total_money}""")
         print(self.factories[0])
