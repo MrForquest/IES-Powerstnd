@@ -246,6 +246,15 @@ class Powerstand:
         order = {"orderT": order_type, "line": {"id": line, "line": line_obj}, "address": address}
         self.__order.append(order)
 
+    def __change_cell(self, name, energy, charge=True):
+        order = "charge" if charge else "discharge"
+        if energy < 0:
+            raise ValueError('Неправильное значение добавляемой энергии. Приказ не принят')
+        elif name not in self.objects:
+            raise NameError("Такого накопителя нет в топологии. Приказ не принят")
+        else:
+            self.__orders.append({"orderT": order, "name": name, "power": energy})
+
     def __charge(self, name, energy):
         self.objects[name].charge(energy)
 
