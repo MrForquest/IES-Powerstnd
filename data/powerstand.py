@@ -256,10 +256,10 @@ class Powerstand:
             self.__orders.append({"orderT": order, "name": name, "power": energy})
 
     def __charge(self, name, energy):
-        self.objects[name].charge(energy)
+        self.objects_n2obj[name].charge(energy)
 
     def __discharge(self, name, energy):
-        self.objects[name].discharge(energy)
+        self.objects_n2obj[name].discharge(energy)
 
     def __set_line(self, station_name, line_id, val):
         station = self.objects_n2obj[station_name]
