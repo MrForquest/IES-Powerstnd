@@ -20,10 +20,13 @@ class Charger(Base):
 
     def discharge(self, energy):
         energy = max(min(energy, 15), 0)
+
         if self.energy - energy >= 0:
             self.energy -= energy
+            return energy
         else:
             self.energy = 0
+            return energy
 
     def set_price(self, price):
         self.price = price
