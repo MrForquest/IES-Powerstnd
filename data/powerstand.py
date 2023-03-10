@@ -10,6 +10,7 @@ from data.solar_panel import SolarPanel
 from random import randint
 from data.factory import Factory, FactoryOutput
 from data.hospital import Hospital, HospitalOutput
+from data.charger import Charger
 
 
 class Powerstand:
@@ -37,7 +38,6 @@ class Powerstand:
         self.factories_outputs = [FactoryOutput(na) for na in factories_names]
         # self.small_houses = [SolarPanel(na) for na in self.prosumer_names if na[0] in "s"]
 
-
         # больницы
         hospital_names = [na for na in self.prosumer_names if na[0] in "b"]
         self.hospitals = list()
@@ -47,13 +47,17 @@ class Powerstand:
         self.prosumers = [
             Prosumer(na) for na in self.prosumer_names if na[0] not in ("M", "m", "e", "s", "a", "f")]
 
+        # аккумуляторы
+        self.charger_names = [na for na in self.prosumer_names if na[0] in "c"]
+        self.chargers = [Charger(na) for na in self.charger_names]
+
         # станциии
         self.all_stations = list()
         self.all_stations = [Station(stn) for stn in self.st_names]
         self.main_st = filter(lambda stn_: stn_.name[0] == "M", self.all_stations).__next__()
 
         self.objects = {obj.name: obj for obj in
-                        (self.prosumers + self.panels + self.all_stations + self.factories_outputs)}
+                        (self.prosumers + self.panels + self.all_stations + self.factories_outputs + self.chargers)}
 
         # линии
         self.all_lines = list()
@@ -143,7 +147,6 @@ class Powerstand:
 
         networks = station.get_networks()
         for net in networks:
-            total_net_energy = 0
             addresses = net.line.get_address()
 
             if net.broken:
@@ -190,6 +193,12 @@ class Powerstand:
     def clean_all_stations(self):
         for st in self.all_stations:
             st.now_available = True
+
+    def charge(self, name, energy):
+        self.objects[name].charge(energy)
+
+    def discharge(self, name, energy):
+        self.objects[name].discharge(energy)
 
     def run(self):
         for i in range(100):
