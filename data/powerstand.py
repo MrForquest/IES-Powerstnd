@@ -194,10 +194,19 @@ class Powerstand:
         for st in self.all_stations:
             st.now_available = True
 
-    def charge(self, name, energy):
+    def __change_cell(self, name, energy, charge=True):
+        order = "charge" if charge else "discharge"
+        if energy < 0:
+            raise ValueError('Неправильное значение добавляемой энергии. Приказ не принят')
+        elif name not in self.objects:
+            raise NameError("Такого накопителя нет в топологии. Приказ не принят")
+        else:
+            self.__orders.append({"orderT": order, "name": name, "power": energy})
+
+    def __charge(self, name, energy):
         self.objects[name].charge(energy)
 
-    def discharge(self, name, energy):
+    def __discharge(self, name, energy):
         self.objects[name].discharge(energy)
 
     def run(self):
