@@ -8,6 +8,11 @@ class Prosumer(Base):
             connections = list()
         super().__init__(name, connections)
         self.connections = connections
+        if name[0] == "h":
+            self.type = "houseA"
+        elif name[0] == "d":
+            self.type = "houseB"
+
         self.price = None
         self.data = None
 

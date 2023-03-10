@@ -6,12 +6,13 @@ from config import config
 
 class Factory(Prosumer):
     def __init__(self, output_obj1, output_obj2=None):
+        super().__init__("f-AbstractFactory")
         self.output_obj1 = output_obj1
         self.output_obj2 = output_obj2
         self.output_obj1.set_factory(self)
         if not (output_obj2 is None):
             self.output_obj2.set_factory(self)
-        super().__init__("f-AbstractFactory")
+        self.type = "factory"
 
     def check2outputs(self):
         net1 = self.output_obj1.connections[0].net

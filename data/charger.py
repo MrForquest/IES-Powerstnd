@@ -10,6 +10,7 @@ class Charger(Base):
         self.price = None
         self.energy = 0
         self.max_energy = 100
+        self.type = "storage"
 
     def charge(self, energy):
         energy = max(min(energy, 15), 0)

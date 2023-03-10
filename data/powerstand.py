@@ -17,6 +17,8 @@ from data.charger import Charger
 class Powerstand:
     def __init__(self, config):
         self.config = config
+        self.__orders = list()
+
         topology = self.config["topology"]
 
         names = list()
@@ -133,21 +135,11 @@ class Powerstand:
         self.objects = (
                 self.factories
                 + self.hospitals
-                + self.all_lines
                 + self.panels
                 + self.prosumers
-                + self.all_names
                 + self.chargers
         )
         self.init_objects()
-
-    def init_orders(self):
-        self.orders = Namespace(
-            charge=lambda address, power: self.__change_cell(address, power, True),
-            discharge=lambda address, power: self.__change_cell(address, power, False),
-            line_on=lambda address, line: self.set_line(address, line, True),
-            line_off=lambda address, line: self.set_line(address, line, False),
-        )
 
     def init_objects(self):
         forecast_num = 2  # randint(1, 9)
@@ -180,6 +172,14 @@ class Powerstand:
             else:
                 obj.set_price(self.config["prices"][name])
 
+    def init_orders(self):
+        self.orders = Namespace(
+            charge=lambda address, power: self.__change_cell(address, power, True),
+            discharge=lambda address, power: self.__change_cell(address, power, False),
+            line_on=lambda address, line: self.set_line_order(address, line, True),
+            line_off=lambda address, line: self.set_line_order(address, line, False),
+        )
+
     def get_object(self, name):
         return self.objects_n2obj[name]
 
@@ -205,8 +205,8 @@ class Powerstand:
                 st_energy += subordinate_st_energy
             else:
                 for addr in addresses:
-                    energy = addr.get_energy(self.tick)
                     if station.now_available:
+                        energy = addr.get_energy(self.tick)
                         line_energy += energy
                         if isinstance(addr, FactoryOutput):
                             self.total_money += addr.factory.get_price() * energy
@@ -235,7 +235,7 @@ class Powerstand:
         for st in self.all_stations:
             st.now_available = True
 
-    def set_line(self, address, line, val):
+    def set_line_order(self, address, line, val):
         if not (address in self.st_names):
             raise ValueError(f"Нет такой станции {address}")
         station = self.get_object(address)
@@ -244,7 +244,7 @@ class Powerstand:
             raise ValueError(f"Нет такой станции {address}")
         order_type = "lineOn" if val else "lineOff"
         order = {"orderT": order_type, "line": {"id": line, "line": line_obj}, "address": address}
-        self.__order.append(order)
+        self.__orders.append(order)
 
     def __change_cell(self, name, energy, charge=True):
         order = "charge" if charge else "discharge"
@@ -284,6 +284,18 @@ class Powerstand:
             print(f"""total money for tick {self.tick}: {self.total_money}""")
         print(self.factories[0])
         print(sum(self.factories[0].data))
+
+    def save_and_exit(self):
+        for order in self.__orders:
+            if order["orderT"] == "line_on":
+                self.__set_line(order["address"], order["line"], True)
+            if order["orderT"] == "line_off":
+                self.__set_line(order["address"], order["line"], False)
+        for order in self.__orders:
+            if order["orderT"] == "charge":
+                self.__charge(order["name"], order["power"])
+            if order["orderT"] == "discharge":
+                self.__discharge(order["name"], order["power"])
 
 
 # Серёжа хочет видеть такие МЕТОДЫ у соотвующих объектов(SolarPanel, SmallHouse и другие)

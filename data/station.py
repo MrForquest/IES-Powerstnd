@@ -13,6 +13,12 @@ class Station(Base):
         super().__init__(name, connections)
         self.lines = lines_
         self.networks = list()
+        if name[0] == "M":
+            self.type = "main"
+        elif name[0] == "e":
+            self.type = "miniA"
+        elif name[0] == "m":
+            self.type = "miniB"
         self.id = name
         self.now_available = True
         self.update_networks()
