@@ -14,6 +14,6 @@ G = nx.Graph()
 row_data = list()
 for line in data:
     e = (line["station"], line["address"])
-    G.add_edge(*e, name=line["address"], color='red')
+    G.add_edge(*e, name=line["address"], color="red")
 nx.draw(G, with_labels=True, node_color="orange", node_size=2000)
 plt.show()

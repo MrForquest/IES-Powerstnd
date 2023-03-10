@@ -1,4 +1,6 @@
 import random
+from random import randint
+from argparse import Namespace
 
 from data.line import Line
 from data.prosumer import Prosumer
@@ -7,7 +9,6 @@ from data.station_energy import StationEnergy
 from data.utilities import get_energy_loss, get_column
 from data.small_house import SmallHouse
 from data.solar_panel import SolarPanel
-from random import randint
 from data.factory import Factory, FactoryOutput
 from data.hospital import Hospital, HospitalOutput
 from data.charger import Charger
@@ -27,7 +28,9 @@ class Powerstand:
         # имена объектов
         self.all_names = list(set(names))
         self.st_names = list(set([na for na in names if na[0] in ("M", "m", "e")]))
-        self.prosumer_names = list(set([na for na in names if na[0] not in ("M", "m", "e", "s", "a")]))
+        self.prosumer_names = list(
+            set([na for na in names if na[0] not in ("M", "m", "e", "s", "a")])
+        )
 
         # солнечные панели
         self.panels = [SolarPanel(na) for na in self.prosumer_names if na[0] in "s"]
@@ -45,7 +48,10 @@ class Powerstand:
 
         # дома потребители
         self.prosumers = [
-            Prosumer(na) for na in self.prosumer_names if na[0] not in ("M", "m", "e", "s", "a", "f")]
+            Prosumer(na)
+            for na in self.prosumer_names
+            if na[0] not in ("M", "m", "e", "s", "a", "f")
+        ]
 
         # аккумуляторы
         self.charger_names = [na for na in self.prosumer_names if na[0] in "c"]
@@ -54,10 +60,19 @@ class Powerstand:
         # станциии
         self.all_stations = list()
         self.all_stations = [Station(stn) for stn in self.st_names]
-        self.main_st = filter(lambda stn_: stn_.name[0] == "M", self.all_stations).__next__()
+        self.main_st = filter(
+            lambda stn_: stn_.name[0] == "M", self.all_stations
+        ).__next__()
 
-        self.objects_n2obj = {obj.name: obj for obj in
-                              (self.prosumers + self.panels + self.all_stations + self.factories_outputs)}
+        self.objects_n2obj = {
+            obj.name: obj
+            for obj in (
+                    self.prosumers
+                    + self.panels
+                    + self.all_stations
+                    + self.factories_outputs
+            )
+        }
         # линии
         self.all_lines = list()
         line_names = list(
@@ -66,7 +81,9 @@ class Powerstand:
         for line_name in line_names:
             st_name, line_id = line_name.split()
             line_id = int(line_id)
-            lines = filter(lambda li: li["station"] == st_name and li["line"] == line_id, topology)
+            lines = filter(
+                lambda li: li["station"] == st_name and li["line"] == line_id, topology
+            )
             station = self.get_object(st_name)
             line_obj = Line(station, line_id=line_id)
             for line in lines:
@@ -96,8 +113,6 @@ class Powerstand:
                     self.factories.append(new_factory)
 
         # инициализация объектов Больниц
-        numbers_str = "123456789ABCDEF"
-        numbers_dict = dict(zip(list(numbers_str), range(len(numbers_str))))
         hospital_names.sort()
         for i, f_na in enumerate(hospital_names):
             ind = numbers_dict[f_na[1]]
@@ -115,21 +130,47 @@ class Powerstand:
                     self.hospitals.append(new_hospital)
 
         print(self.factories)
-        objects =
+        self.objects = (
+                self.factories
+                + self.hospitals
+                + self.all_lines
+                + self.panels
+                + self.prosumers
+                + self.all_names
+                + self.chargers
+        )
         self.init_objects()
+
+    def init_orders(self):
+        self.orders = Namespace(
+            charge=lambda address, power: self.__change_cell(address, power, True),
+            discharge=lambda address, power: self.__change_cell(address, power, False),
+            line_on=lambda address, line: self.set_line(address, line, True),
+            line_off=lambda address, line: self.set_line(address, line, False),
+        )
 
     def init_objects(self):
         forecast_num = 2  # randint(1, 9)
         for obj in self.objects_n2obj.values():
             if obj.name[0] in "h":
-                obj.set_data(get_column(f"""Дома А: {forecast_num}""", self.config["forecasts"]))
+                obj.set_data(
+                    get_column(f"""Дома А: {forecast_num}""", self.config["forecasts"])
+                )
             elif obj.name[0] in "d":
-                obj.set_data(get_column(f"""Дома Б: {forecast_num}""", self.config["forecasts"]))
+                obj.set_data(
+                    get_column(f"""Дома Б: {forecast_num}""", self.config["forecasts"])
+                )
             elif obj.name[0] in "f":
                 print(obj)
-                obj.factory.set_data(get_column(f"""Заводы: {forecast_num}""", self.config["forecasts"]))
+                obj.factory.set_data(
+                    get_column(f"""Заводы: {forecast_num}""", self.config["forecasts"])
+                )
             elif obj.name[0] in "b":
-                obj.set_data(get_column(f"""Больницы: {forecast_num}""", self.config["forecasts"]))
+                obj.set_data(
+                    get_column(
+                        f"""Больницы: {forecast_num}""", self.config["forecasts"]
+                    )
+                )
             elif obj.name[0] in "s":
                 obj.set_data(get_column(obj.name, self.config["gen_file"]))
         for name in self.config["prices"]:
@@ -194,13 +235,24 @@ class Powerstand:
         for st in self.all_stations:
             st.now_available = True
 
-    def charge(self, name, energy):
+    def set_line(self, address, line, val):
+        if not (address in self.st_names):
+            raise ValueError(f"Нет такой станции {address}")
+        station = self.get_object(address)
+        line_obj = station.get_line(line)
+        if not (address in self.st_names):
+            raise ValueError(f"Нет такой станции {address}")
+        order_type = "lineOn" if val else "lineOff"
+        order = {"orderT": order_type, "line": {"id": line, "line": line_obj}, "address": address}
+        self.__order.append(order)
+
+    def __charge(self, name, energy):
         self.objects[name].charge(energy)
 
-    def discharge(self, name, energy):
+    def __discharge(self, name, energy):
         self.objects[name].discharge(energy)
 
-    def line_on(self, station_name, line_id):
+    def __set_line(self, station_name, line_id, val):
         station = self.objects_n2obj[station_name]
 
         if not isinstance(station, Station):
@@ -208,17 +260,7 @@ class Powerstand:
 
         line = station.get_line(line_id)
         net = line.net
-        net.net_on()
-
-    def line_off(self, station_name, line_id):
-        station = self.objects_n2obj[station_name]
-
-        if not isinstance(station, Station):
-            raise TypeError(f"{station} не станция!")
-
-        line = station.get_line(line_id)
-        net = line.net
-        net.net_off()
+        net.online = val
 
     def run(self):
         for i in range(100):
