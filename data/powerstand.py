@@ -45,7 +45,7 @@ class Powerstand:
         # больницы
         hospital_names = [na for na in self.prosumer_names if na[0] in "b"]
         self.hospitals = list()
-        self.hospitals_outputs = [Hospital(na) for na in hospital_names]
+        self.hospitals_outputs = [HospitalOutput(na) for na in hospital_names]
 
         # дома потребители
         self.prosumers = [
