@@ -27,7 +27,7 @@ class Charger(Base):
         self.charge_state = state
         self.got_energy = power
 
-    def get_energy(self):
+    def get_energy(self, tick):
         if self.charge_state:
             self.charge(self.got_energy)
             energy = self.got_energy
@@ -55,6 +55,9 @@ class Charger(Base):
 
     def get_price(self):
         return self.price
+
+    def get_penalty(self, tick):
+        return 0
 
     def __repr__(self):
         return f'Charger("{self.name}")'
