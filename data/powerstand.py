@@ -45,7 +45,7 @@ class Powerstand:
         # больницы
         hospital_names = [na for na in self.prosumer_names if na[0] in "b"]
         self.hospitals = list()
-        self.hospitals_outputs = [FactoryOutput(na) for na in factories_names]
+        self.hospitals_outputs = [Hospital(na) for na in hospital_names]
 
         # дома потребители
         self.prosumers = [
@@ -257,10 +257,10 @@ class Powerstand:
             self.__orders.append({"orderT": order, "name": name, "power": energy})
 
     def __charge(self, name, energy):
-        self.objects_n2obj[name].charge(energy)
+        self.objects_n2obj[name].make_request(True, energy)
 
     def __discharge(self, name, energy):
-        self.objects_n2obj[name].discharge(energy)
+        self.objects_n2obj[name].make_request(False, energy)
 
     def __set_line(self, station_name, line_id, val):
         station = self.objects_n2obj[station_name]

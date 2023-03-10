@@ -23,6 +23,10 @@ class Charger(Base):
             self.charger_energy = 100
             self.got_energy = self.got_energy + self.charger_energy - 100
 
+    def make_request(self, state, power):
+        self.charge_state = state
+        self.got_energy = power
+
     def get_energy(self):
         if self.charge_state:
             self.charge(self.got_energy)
