@@ -30,6 +30,13 @@ class Station(Base):
     def get_lines(self):
         return self.lines
 
+    def get_line(self, line_id):
+        for line in self.lines:
+            if line.line_id == line_id:
+                return line
+        else:
+            raise ValueError(f"У станции {self} нет линии c id {line_id}")
+
     def append_line(self, line: Line):
         self.lines.append(line)
         self.update_networks()

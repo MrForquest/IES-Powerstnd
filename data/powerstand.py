@@ -45,9 +45,8 @@ class Powerstand:
         self.all_stations = [Station(stn) for stn in self.st_names]
         self.main_st = filter(lambda stn_: stn_.name[0] == "M", self.all_stations).__next__()
 
-        self.objects = {obj.name: obj for obj in
-                        (self.prosumers + self.panels + self.all_stations + self.factories_outputs)}
-
+        self.objects_n2obj = {obj.name: obj for obj in
+                              (self.prosumers + self.panels + self.all_stations + self.factories_outputs)}
         # линии
         self.all_lines = list()
         line_names = list(
@@ -86,11 +85,12 @@ class Powerstand:
                     self.factories.append(new_factory)
 
         print(self.factories)
+        objects =
         self.init_objects()
 
     def init_objects(self):
         forecast_num = 2  # randint(1, 9)
-        for obj in self.objects.values():
+        for obj in self.objects_n2obj.values():
             if obj.name[0] in "h":
                 obj.set_data(get_column(f"""Дома А: {forecast_num}""", self.config["forecasts"]))
             elif obj.name[0] in "d":
@@ -103,14 +103,14 @@ class Powerstand:
             elif obj.name[0] in "s":
                 obj.set_data(get_column(obj.name, self.config["gen_file"]))
         for name in self.config["prices"]:
-            obj = self.objects[name]
+            obj = self.objects_n2obj[name]
             if isinstance(obj, FactoryOutput):
                 obj.factory.set_price(self.config["prices"][name])
             else:
                 obj.set_price(self.config["prices"][name])
 
     def get_object(self, name):
-        return self.objects[name]
+        return self.objects_n2obj[name]
 
     def tree_traversal_rec(self, station):
         st_energy = StationEnergy(0, 0, 0)
@@ -164,6 +164,26 @@ class Powerstand:
     def clean_all_stations(self):
         for st in self.all_stations:
             st.now_available = True
+
+    def line_on(self, station_name, line_id):
+        station = self.objects_n2obj[station_name]
+
+        if not isinstance(station, Station):
+            raise TypeError(f"{station} не станция!")
+
+        line = station.get_line(line_id)
+        net = line.net
+        net.net_on()
+
+    def line_off(self, station_name, line_id):
+        station = self.objects_n2obj[station_name]
+
+        if not isinstance(station, Station):
+            raise TypeError(f"{station} не станция!")
+
+        line = station.get_line(line_id)
+        net = line.net
+        net.net_off()
 
     def run(self):
         for i in range(100):

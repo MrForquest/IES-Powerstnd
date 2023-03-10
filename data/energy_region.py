@@ -6,7 +6,7 @@ class EnergyRegion:
 
     def __init__(self, line):
         self.wear = 0
-        self.online = True
+        self.online = False
         self.upflow = 0
         self.downflow = 0
         self.losses = 0
@@ -15,6 +15,12 @@ class EnergyRegion:
         self.line.net = self
         self.max_cooldown = 5
         self.cooldown = 0
+
+    def net_off(self):
+        self.online = False
+
+    def net_on(self):
+        self.online = True
 
     def calc_wear(self, energy):
         x = abs(energy) / self.nominal_energy
