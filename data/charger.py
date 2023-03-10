@@ -8,25 +8,43 @@ class Charger(Base):
         super().__init__(name, connections)
         self.connections = connections
         self.price = None
-        self.energy = 0
+        self.charger_energy = 0
         self.max_energy = 100
+        self.charge_state = False
+        self.got_energy = 0
 
     def charge(self, energy):
-        energy = max(min(energy, 15), 0)
-        if self.energy + energy <= 100:
-            self.energy += energy
+        self.got_energy = energy
+        self.charge_state = True
+        self.got_energy = max(min(energy, 15), 0)
+        if self.charger_energy + self.got_energy <= 100:
+            self.charger_energy += self.got_energy
         else:
-            self.energy = 100
+            self.charger_energy = 100
+            self.got_energy = self.got_energy + self.charger_energy - 100
+
+    def get_energy(self):
+        if self.charge_state:
+            self.charge(self.got_energy)
+            energy = self.got_energy
+            self.got_energy = 0
+            return -energy
+        elif not self.charge_state:
+            self.discharge(self.got_energy)
+            energy = self.got_energy
+            self.got_energy = 0
+            return energy
 
     def discharge(self, energy):
-        energy = max(min(energy, 15), 0)
+        self.got_energy = energy
+        self.charge_state = False
+        self.got_energy = max(min(energy, 15), 0)
 
-        if self.energy - energy >= 0:
-            self.energy -= energy
-            return energy
+        if self.charger_energy - self.got_energy >= 0:
+            self.charger_energy -= self.got_energy
         else:
-            self.energy = 0
-            return energy
+            self.charger_energy = 0
+            self.got_energy = self.charger_energy
 
     def set_price(self, price):
         self.price = price

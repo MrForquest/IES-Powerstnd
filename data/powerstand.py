@@ -18,6 +18,7 @@ class Powerstand:
     def __init__(self, config):
         self.config = config
         topology = self.config["topology"]
+        self.__orders = list()
 
         names = list()
         self.total_money = 0
@@ -244,7 +245,7 @@ class Powerstand:
             raise ValueError(f"Нет такой станции {address}")
         order_type = "lineOn" if val else "lineOff"
         order = {"orderT": order_type, "line": {"id": line, "line": line_obj}, "address": address}
-        self.__order.append(order)
+        self.__orders.append(order)
 
     def __change_cell(self, name, energy, charge=True):
         order = "charge" if charge else "discharge"
