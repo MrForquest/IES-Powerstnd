@@ -8,8 +8,6 @@ from config import config
 
 class SolarPanel(Base):
     def __init__(self, name, connections=None):
-        self.type = "solar"
-
         if connections is None:
             connections = list()
         super().__init__(name, connections)

@@ -9,7 +9,7 @@ class Hospital(Factory):
         self.output_obj1.set_factory(self)
         if not (output_obj2 is None):
             self.output_obj2.set_hospital(self)
-        self.type = "hospital"
+
 
     def __repr__(self):
         return f'Hospital("{self.output_obj1},{self.output_obj2})")'

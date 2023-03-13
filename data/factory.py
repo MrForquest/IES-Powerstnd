@@ -12,7 +12,6 @@ class Factory(Prosumer):
         self.output_obj1.set_factory(self)
         if not (output_obj2 is None):
             self.output_obj2.set_factory(self)
-        self.type = "factory"
 
     def check2outputs(self):
         net1 = self.output_obj1.connections[0].net

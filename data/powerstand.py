@@ -162,6 +162,9 @@ class Powerstand:
 
     def init_objects(self):
         forecast_num = 2  # randint(1, 9)
+        from collections import namedtuple
+
+        self.config["forecasts"]
         for obj in self.objects_n2obj.values():
             if obj.name[0] in "h":
                 obj.set_data(
@@ -285,8 +288,8 @@ class Powerstand:
         net = line.net
         net.online = val
 
-    def run(self):
-        for i in range(4):
+    def run(self, num_ticks):
+        for i in range(num_ticks):
             self.tick = i
             self.user_script(self)
             print(self.__orders)

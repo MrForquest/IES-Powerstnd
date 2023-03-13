@@ -18,6 +18,22 @@ def get_column(name, file):
     return values
 
 
+def get_forecasts(file):
+    from collections import namedtuple
+    Forecasts = namedtuple(
+        "Forecasts", ("hospital", "factory", "houseA", "houseB", "sun", "wind")
+    )
+    rus_names = ["Солнце", "Ветер", "Дома А", "Дома Б", "Больницы", "Заводы"]
+    df = pd.read_csv("../forecast/" + file)
+    names = df.columns
+    for name in rus_names:
+        current_names = [na for na in names if name in na]
+
+        print(current_names)
+        print(df[current_names])
+
+
+#get_forecasts("forecast_2022-03-07T13.46_17.511Z.csv")
 """
 # tree classifier to dict
 # todo do tree regressor

@@ -19,9 +19,14 @@ data = [
 
 def user_script(psm: Powerstand):
     for obj in psm.objects:
-        if isinstance(obj, Station):
+        print("types")
+        print(obj.type)
+        print("-" * 20)
+
+        if obj.type in ("miniA", "miniB"):
             for line in obj.get_lines():
                 psm.orders.line_on(obj.name, line.line_id)
+
     psm.orders.charge('c3', 100)
     psm.save_and_exit()
 
@@ -30,4 +35,4 @@ def user_script(psm: Powerstand):
 random.seed(2)
 powerstand = Powerstand(config)
 powerstand.set_user_script(user_script)
-powerstand.run()
+powerstand.run(10)
