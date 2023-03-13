@@ -10,6 +10,8 @@ class Base:
             self.type = "main"
         elif type_name == "e":
             self.type = "miniA"
+        elif type_name == "m":
+            self.type = "miniB"
         elif type_name == "f":
             self.type = "factory"
         elif type_name == "c":

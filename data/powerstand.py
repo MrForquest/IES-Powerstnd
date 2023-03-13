@@ -225,9 +225,9 @@ class Powerstand:
                         energy = addr.get_energy(self.tick)
                         line_energy += energy
                         if isinstance(addr, FactoryOutput):
-                            self.total_money += addr.factory.get_price() * energy
+                            self.total_money += addr.factory.get_price() * abs(energy)
                         else:
-                            self.total_money += addr.get_price() * energy
+                            self.total_money += addr.get_price() * abs(energy)
 
                     else:
                         print("aaaa", addr.get_penalty(self.tick))
@@ -313,11 +313,10 @@ class Powerstand:
 
     def save_and_exit(self):
         for order in self.__orders:
-            print( order["orderT"] )
+            print(order["orderT"])
             if order["orderT"] == "lineOn":
                 self.set_line(order["address"], order["line"]["id"], True)
             if order["orderT"] == "lineOff":
-
                 self.set_line(order["address"], order["line"]["id"], False)
         for order in self.__orders:
             if order["orderT"] == "charge":
