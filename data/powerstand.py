@@ -17,9 +17,8 @@ from data.charger import Charger
 class Powerstand:
     def __init__(self, config):
         self.config = config
-        self.__orders = list()
-
         topology = self.config["topology"]
+        self.__orders = list()
 
         names = list()
         self.total_money = 0
@@ -31,7 +30,7 @@ class Powerstand:
         self.all_names = list(set(names))
         self.st_names = list(set([na for na in names if na[0] in ("M", "m", "e")]))
         self.prosumer_names = list(
-            set([na for na in names if na[0] not in ("M", "m", "e", "s", "a")])
+            set([na for na in names if na[0] not in ("M", "m", "e", "s", "a", 'c')])
         )
 
         # солнечные панели
@@ -46,7 +45,7 @@ class Powerstand:
         # больницы
         hospital_names = [na for na in self.prosumer_names if na[0] in "b"]
         self.hospitals = list()
-        self.hospitals_outputs = [FactoryOutput(na) for na in factories_names]
+        self.hospitals_outputs = [HospitalOutput(na) for na in hospital_names]
 
         # дома потребители
         self.prosumers = [
@@ -56,7 +55,7 @@ class Powerstand:
         ]
 
         # аккумуляторы
-        self.charger_names = [na for na in self.prosumer_names if na[0] in "c"]
+        self.charger_names = [na for na in self.all_names if na[0] in "c"]
         self.chargers = [Charger(na) for na in self.charger_names]
 
         # станциии
@@ -73,9 +72,11 @@ class Powerstand:
                     + self.panels
                     + self.all_stations
                     + self.factories_outputs
+                    + self.chargers
             )
         }
         # линии
+        print(self.objects_n2obj)
         self.all_lines = list()
         line_names = list(
             set([" ".join((line["station"], str(line["line"]))) for line in topology])
@@ -98,21 +99,29 @@ class Powerstand:
         # инициализация объектов Заводов
         numbers_str = "123456789ABCDEF"
         numbers_dict = dict(zip(list(numbers_str), range(len(numbers_str))))
+        flag = False
         factories_names.sort()
         for i, f_na in enumerate(factories_names):
+            if flag:
+                flag = False
+                continue
             ind = numbers_dict[f_na[1]]
-            if ind % 2 == 0:
-                if i != len(factories_names) - 1:
-                    f_na_2 = factories_names[i + 1]
-                    ind_2 = numbers_dict[f_na_2[1]]
-                    fo2 = None
-                    if ind_2 - ind == 1:
-                        fo1 = self.get_object(f_na)
-                        fo2 = self.get_object(f_na_2)
-                    else:
-                        fo1 = self.get_object(f_na)
-                    new_factory = Factory(fo1, fo2)
-                    self.factories.append(new_factory)
+            if i != len(factories_names) - 1:
+                f_na_2 = factories_names[i + 1]
+                ind_2 = numbers_dict[f_na_2[1]]
+                fo2 = None
+                if ind_2 - ind == 1 and ind % 2 == 0:
+                    fo1 = self.get_object(f_na)
+                    fo2 = self.get_object(f_na_2)
+                    flag = True
+                else:
+                    fo1 = self.get_object(f_na)
+                new_factory = Factory(fo1, fo2)
+                self.factories.append(new_factory)
+            else:
+                fo1 = self.get_object(f_na)
+                new_factory = Factory(fo1, None)
+                self.factories.append(new_factory)
 
         # инициализация объектов Больниц
         hospital_names.sort()
@@ -137,9 +146,19 @@ class Powerstand:
                 + self.hospitals
                 + self.panels
                 + self.prosumers
+                + self.all_stations
                 + self.chargers
         )
         self.init_objects()
+        self.init_orders()
+
+    def init_orders(self):
+        self.orders = Namespace(
+            charge=lambda address, power: self.__change_cell(address, power, True),
+            discharge=lambda address, power: self.__change_cell(address, power, False),
+            line_on=lambda address, line: self.__set_line(address, line, True),
+            line_off=lambda address, line: self.__set_line(address, line, False),
+        )
 
     def init_objects(self):
         forecast_num = 2  # randint(1, 9)
@@ -166,19 +185,13 @@ class Powerstand:
             elif obj.name[0] in "s":
                 obj.set_data(get_column(obj.name, self.config["gen_file"]))
         for name in self.config["prices"]:
+            if not (name in self.all_names):
+                continue
             obj = self.objects_n2obj[name]
             if isinstance(obj, FactoryOutput):
                 obj.factory.set_price(self.config["prices"][name])
             else:
                 obj.set_price(self.config["prices"][name])
-
-    def init_orders(self):
-        self.orders = Namespace(
-            charge=lambda address, power: self.__change_cell(address, power, True),
-            discharge=lambda address, power: self.__change_cell(address, power, False),
-            line_on=lambda address, line: self.set_line_order(address, line, True),
-            line_off=lambda address, line: self.set_line_order(address, line, False),
-        )
 
     def get_object(self, name):
         return self.objects_n2obj[name]
@@ -212,6 +225,7 @@ class Powerstand:
                             self.total_money += addr.factory.get_price() * energy
                         else:
                             self.total_money += addr.get_price() * energy
+
                     else:
                         print("aaaa", addr.get_penalty(self.tick))
                         self.total_money += addr.get_penalty(self.tick)
@@ -235,7 +249,7 @@ class Powerstand:
         for st in self.all_stations:
             st.now_available = True
 
-    def set_line_order(self, address, line, val):
+    def __set_line(self, address, line, val):
         if not (address in self.st_names):
             raise ValueError(f"Нет такой станции {address}")
         station = self.get_object(address)
@@ -250,18 +264,18 @@ class Powerstand:
         order = "charge" if charge else "discharge"
         if energy < 0:
             raise ValueError('Неправильное значение добавляемой энергии. Приказ не принят')
-        elif name not in self.objects:
+        elif name not in self.all_names:
             raise NameError("Такого накопителя нет в топологии. Приказ не принят")
         else:
             self.__orders.append({"orderT": order, "name": name, "power": energy})
 
     def __charge(self, name, energy):
-        self.objects[name].charge(energy)
+        self.objects_n2obj[name].make_request(True, energy)
 
     def __discharge(self, name, energy):
-        self.objects[name].discharge(energy)
+        self.objects_n2obj[name].make_request(False, energy)
 
-    def __set_line(self, station_name, line_id, val):
+    def set_line(self, station_name, line_id, val):
         station = self.objects_n2obj[station_name]
 
         if not isinstance(station, Station):
@@ -272,25 +286,36 @@ class Powerstand:
         net.online = val
 
     def run(self):
-        for i in range(100):
+        for i in range(4):
             self.tick = i
+            self.user_script(self)
+            print(self.__orders)
             self.clean_all_stations()
             energy = self.tree_traversal_rec(self.main_st)
             if energy.total_energy < 0:
                 self.total_money -= energy.total_energy * (-10)
             elif energy.total_energy > 0:
                 self.total_money += energy.total_energy * 1
+            print(self.chargers[0].charger_energy, 'ЭНЕРГИЯ В АКБ')
             print(f"""energy for tick {self.tick}: {energy}""")
+            print([net.online for net in self.all_stations[0].networks])
             print(f"""total money for tick {self.tick}: {self.total_money}""")
-        print(self.factories[0])
-        print(sum(self.factories[0].data))
+            self.__orders.clear()
+        # print(self.factories[0])
+        # print(sum(self.factories[0].data))
+
+    def set_user_script(self, user_script):
+        # user_script - функция
+        self.user_script = user_script
 
     def save_and_exit(self):
         for order in self.__orders:
-            if order["orderT"] == "line_on":
-                self.__set_line(order["address"], order["line"], True)
-            if order["orderT"] == "line_off":
-                self.__set_line(order["address"], order["line"], False)
+            print( order["orderT"] )
+            if order["orderT"] == "lineOn":
+                self.set_line(order["address"], order["line"]["id"], True)
+            if order["orderT"] == "lineOff":
+
+                self.set_line(order["address"], order["line"]["id"], False)
         for order in self.__orders:
             if order["orderT"] == "charge":
                 self.__charge(order["name"], order["power"])
