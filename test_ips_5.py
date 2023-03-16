@@ -32,6 +32,10 @@ class MyController:
             "storage",  # накопители
         ]
 
+        self.id2obj = dict()
+        for obj in self.psm.objects:
+            self.id2obj[obj.id] = obj
+
         self.station_names = {"main", "miniA", "miniB"}
 
         self.addr2obj = {obj.address[0]: obj for obj in self.psm.objects}
@@ -74,19 +78,6 @@ class MyController:
 
         # рассчитаем коэффициенты используя формулу
         return coef, b
-
-    def id2address(self, line_id):
-        st_type = line_id[0]
-        st_num = line_id[1]
-        address = ""
-        if st_type == "miniB":
-            address = "m"
-        elif st_type == "miniA":
-            address = "e"
-        elif st_type == "main":
-            address = "M"
-        address += sec_num[st_num]
-        return address
 
     def print_obj(self, obj):
         print("== Объект:", obj.id, "==")  # (тип, номер)
@@ -132,45 +123,37 @@ class MyController:
         print("-" * 20)
         print("конец")
 
-    def objects_process(self):
-        generation = 0
-        consumption = 0
+    def all_lines_on(self):
         for obj in self.psm.objects:
             addr = obj.address[0]
             if obj.type in self.station_names:
                 # включаем линии
                 for i in range(2 if obj.type == "miniB" else 3):
                     self.psm.orders.line_on(addr, i + 1)
-                continue
+
+    def objects_process(self):
+        generation = 0
+        consumption = 0
+        for obj in self.psm.objects:
+            addr = obj.address[0]
+            if obj.path != (tuple(),):
+                line_obj = obj.path[0][-1]
+                obj_st = self.id2obj[line_obj.id].address[0]
+                line_num = line_obj.line
+            else:
+                obj_st = None
+                line_num = None
+
             if obj.type == "wind":
-                # вычисляем прогноз ветра
-                if obj.failed:
-                    self.psm.orders.line_off("e5", 1)
-                else:
-                    if self.now_wind <= self.next_wind:
-                        generation += obj.power.now.generated * 1.10
-                    else:  # now_wind > next_wind
-                        generation += obj.power.now.generated * 0.85
+                generation += self.wind_process(obj)
                 continue
             if obj.type == "solar":
+                print(obj_st, line_num)
                 # вычисляем прогноз солнца
-                print("Реальность предыдущего:", obj.power.now.generated)
-                corr_next_sun = max(0, self.next_sun - 0.5)
+                generation += self.solar_process(obj)
+                continue
 
-                if psm.tick >= 50:
-                    obj_gens = [line.generated for line in obj.power.then]
-                    coef_, b_ = self.sun_formule(psm.sun.then, obj_gens)
-                    energy = self.next_sun * coef_ + b_
-                    print("Параметры панели", coef_, b_)
-                    energy = max(min(25, energy), 0)
-                    generation += energy
-                else:
-                    if self.now_sun == 0:
-                        generation += 0
-                    else:
-                        generation += obj.power.now.generated * (corr_next_sun / self.now_sun)
-
-                # вычисляем прогноз потребления
+            # вычисляем прогноз потребления
             if obj.type.lower() == "housea":
                 additional = 0.82 * (5 - self.prices[addr]) ** 2.6 if self.prices[addr] < 5 else 0
                 consumption += psm.forecasts.houseA[self.next_tick] + additional + 0.5
@@ -185,6 +168,49 @@ class MyController:
         shortage = abs(generation) - abs(consumption) - (
                 consumption / psm.total_power.consumed) * psm.total_power.losses
         return shortage
+
+    def wind_process(self, obj):
+        # вычисляем прогноз ветра
+        if obj.failed:
+            self.psm.orders.line_off("e5", 1)
+            return 0
+        else:
+            if self.now_wind <= self.next_wind:
+                return obj.power.now.generated * 1.10
+            else:  # now_wind > next_wind
+                return obj.power.now.generated * 0.85
+
+    def solar_process(self, obj):
+        """
+        Обработка солнечных панелей
+        """
+        line_obj = obj.path[0][-1]
+        obj_st = self.id2obj[line_obj.id].address[0]
+        line_num = line_obj.line
+        # print("Реальность предыдущего:", obj.power.now.generated)
+        corr_next_sun = max(0, self.next_sun - 0.5)
+        zero_bold = 0.05
+        # отключение линий с панелями ночтью для починки
+        if (obj.power.then[self.past_tick].generated >= zero_bold) and (obj.power.now.generated <= zero_bold):
+            self.psm.orders.line_off(obj_st, line_num)
+            return 0
+
+        self.id2obj[obj.path[0][-1].id].address
+        energy = 0
+        if psm.tick >= 50:
+            obj_gens = [line.generated for line in obj.power.then]
+            coef_, b_ = self.sun_formule(psm.sun.then, obj_gens)
+            energy = self.next_sun * coef_ + b_
+            # print("Параметры панели", coef_, b_)
+            energy = max(min(25, energy), 0)
+        else:
+            if self.now_sun == 0:
+                energy = 0
+            else:
+                energy = obj.power.now.generated * (corr_next_sun / self.now_sun)
+
+        print([line.generated for line in obj.power.then])
+        return energy
 
     def charge_acbs(self, energy):
         d_eng = max(min((energy / len(self.accums)), 15), 0)
@@ -203,6 +229,7 @@ class MyController:
 
     def run(self):
         print("Тик", self.psm.tick)
+        self.all_lines_on()
         shortage = self.objects_process()
         print("SHORT", shortage)
 
@@ -215,9 +242,9 @@ class MyController:
         # if accum_obj.charge > 99.9:
         #    self.psm
 
-        if self.psm.tick < 10:
-            if shortage < 0:
-                self.psm.orders.buy(abs(shortage), 1)
+        # if self.psm.tick < 10:
+        #    if shortage < 0:
+        #        self.psm.orders.buy(abs(shortage), 1)
         # self.charge_acbs(15) # зарядка акб
         # self.discharge_acbs(15) # разрядка акб
         # P.S. все линии каждый вход по умолчанию включаются, здесь указывайте их конечное состояние
@@ -225,20 +252,38 @@ class MyController:
         # self.psm.orders.line_off("e5", 1) # отключение линии (1-3)
         # self.psm.orders.sell(abs(shortage)*0.8, 10) # Заявка на продажу 10,2 МВт за 2,5 руб./МВт
         # self.psm.orders.buy(abs(shortage)*0.8, 1)# Заявка на покупку 5,5 МВт за 5,1 руб./МВт
-
+        endpoint2obj = dict()
         for obj in self.psm.objects:
-            print(obj.path[-1][0][0]["id"], "asdasads")
-            self.print_obj(obj)
+            # print(self.id2address(obj.path[0][-1].id), "asdasads")
+            # print(obj.path, end=" ")
+            endpoint = obj.path[-1]
+            if not (endpoint in endpoint2obj.keys()):
+                endpoint2obj[endpoint] = list()
+            endpoint2obj[endpoint].append(obj)
+            # self.print_obj(obj)
 
-        for index, net in self.psm.networks.items():
-            self.print_net(index, net)
-
-        self.print_public_info()
-
+        # self.print_public_info()
+        # self.topo = {tuple(self.id2obj.get(loc[0], "error") for loc in c.location): i for (i, c) in
+        #             self.psm.networks.items()}
+        """
+        print(endpoint2obj.get(tuple())[0].path)
+        for i, net in self.psm.networks.items():
+            print(net.location)
+            # print([self.id2obj.get(loc[0]).address for loc in net.location])
+            objs = endpoint2obj.get(net.location, "error")
+            if isinstance(objs, list):
+                print([obj.address for obj in objs])
+            else:
+                print("error")
+            print()
+        # print(self.topo.keys())
+        """
+        # self.objects_process()
         print(self.psm.orders.humanize())
 
 
-psm = ips.from_log("logs/game4.json", 2)
-controller = MyController(psm)
-controller.run()
-controller  # .close()
+for i in range(2, 100):
+    psm = ips.from_log("logs/game4.json", i)
+    controller = MyController(psm)
+    controller.run()
+    controller  # .close()

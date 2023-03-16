@@ -228,7 +228,6 @@ class MyController:
                 print(my_station.connections)
 
 
-
 # for obj in self.psm.objects:
 # self.print_obj(obj)
 
