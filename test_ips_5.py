@@ -12,6 +12,12 @@ class Station:
         self.connections = list()
 
 
+# экстренная зарядка акб на ...мВ
+Emergence_charge_acbs = 0
+# экстренная разрядка акб на ...мВ
+Emergence_DIScharge_acbs = 0
+
+
 class MyController:
     def __init__(self, psm):
         self.psm = psm
@@ -76,6 +82,7 @@ class MyController:
         return coef, b
 
     def id2address(self, line_id):
+
         st_type = line_id[0]
         st_num = line_id[1]
         address = ""
@@ -195,13 +202,15 @@ class MyController:
         d_eng = max(min((energy / len(self.accums)), 15), 0)
         for acb in self.accums:
             psm.orders.discharge(acb, d_eng)
-
         self.psm.orders.humanize()
 
     def close(self):
         self.psm.save_and_exit()
 
     def run(self):
+        global Emergence_charge_acbs
+        global Emergence_DIScharge_acbs
+
         print("Тик", self.psm.tick)
         shortage = self.objects_process()
         print("SHORT", shortage)
@@ -212,17 +221,23 @@ class MyController:
             self.discharge_acbs(abs(shortage))
         accum_obj = self.addr2obj["c1"]
 
-        # if accum_obj.charge > 99.9:
-        #    self.psm
+        # if self.psm.tick < 10:
+        #     if shortage < 0:
+        #         self.psm.orders.buy(abs(shortage), 1)
 
-        if self.psm.tick < 10:
-            if shortage < 0:
-                self.psm.orders.buy(abs(shortage), 1)
-        # self.charge_acbs(15) # зарядка акб
-        # self.discharge_acbs(15) # разрядка акб
+        # экстренная зарядка акб
+        if Emergence_charge_acbs:
+            self.charge_acbs(Emergence_charge_acbs)
+
+        # экстренная разрядка акб
+        if Emergence_DIScharge_acbs:
+            self.discharge_acbs(Emergence_DIScharge_acbs)
+
         # P.S. все линии каждый вход по умолчанию включаются, здесь указывайте их конечное состояние
         # self.psm.orders.line_on("e5", 1) # подключение линии (1-3)
         # self.psm.orders.line_off("e5", 1) # отключение линии (1-3)
+
+
         # self.psm.orders.sell(abs(shortage)*0.8, 10) # Заявка на продажу 10,2 МВт за 2,5 руб./МВт
         # self.psm.orders.buy(abs(shortage)*0.8, 1)# Заявка на покупку 5,5 МВт за 5,1 руб./МВт
 
