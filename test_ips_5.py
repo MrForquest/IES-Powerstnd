@@ -204,6 +204,39 @@ class MyController:
 
         self.psm.orders.humanize()
 
+    def calc_acb(self, shortage, acb_charge, f=False):
+        if (100 - acb_charge) >= 15:
+            if shortage < 15:
+                if f:
+                    self.charge_acbs(shortage)
+                return 0
+            else:
+                if f:
+                    self.charge_acbs(15)
+                return shortage - 15
+        else:
+            if shortage < (100 - acb_charge):
+                if f:
+                    self.charge_acbs(shortage)
+                return 0
+            else:
+                if f:
+                    self.charge_acbs(100 - acb_charge)
+                return shortage - (100 - acb_charge)
+
+
+    def calc_shortage(self, next_shortage, next_next_shortage, next_acb_charge):
+        if next_shortage > 0:
+            new_shortage = self.calc_acb(next_shortage, self.charger_obj.charge, f=True)
+        if next_shortage < 0:
+            self.discharge_acbs(abs(next_shortage))
+
+        if next_next_shortage > 0:
+            new_new_shortage = self.calc_acb(next_next_shortage, next_acb_charge)
+            self.psm.orders.sell(new_new_shortage, 10)
+        if next_next_shortage < 0:
+            self.discharge_acbs(abs(next_shortage))
+
     def close(self):
         self.psm.save_and_exit()
 
@@ -215,21 +248,7 @@ class MyController:
         shortage = self.objects_process()
         print("SHORT", shortage)
 
-        if shortage > 0:
-            if self.charger_obj.charge < 100:
-                if self.charger_obj.charge + shortage > 100:
-                    self.charge_acbs(100 - self.charger_obj.charge)
-                    self.psm.orders.sell(shortage + self.charger_obj.charge - 100, 10)
-                else:
-                    self.charge_acbs(shortage)
-                shortage_after_ch = shortage - 15
-                if shortage_after_ch > 0:
-                    self.psm.orders.sell(shortage_after_ch, 10)
-            else:
-                self.psm.orders.sell(shortage, 10)
-        if shortage < 0:
-            self.discharge_acbs(abs(shortage))
-        accum_obj = self.addr2obj["c1"]
+        self.calc_shortage(next_shortage, next_next_shortage, next_acb_charge)
 
         # if self.psm.tick < 10:
         #     if shortage < 0:
