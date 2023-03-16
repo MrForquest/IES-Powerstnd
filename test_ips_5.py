@@ -35,6 +35,7 @@ class MyController:
         self.station_names = {"main", "miniA", "miniB"}
 
         self.addr2obj = {obj.address[0]: obj for obj in self.psm.objects}
+        self.charger_obj = self.addr2obj[self.accums[0]]
 
         self.past_tick = max(psm.tick - 1, 0)
         self.next_tick = min(psm.tick + 1, len(psm.forecasts.houseA) - 1)
@@ -207,17 +208,25 @@ class MyController:
         print("SHORT", shortage)
 
         if shortage > 0:
-            self.charge_acbs(abs(shortage))
+            if self.charger_obj.charge < 100:
+                if self.charger_obj.charge + shortage > 100:
+                    self.charge_acbs(100 - self.charger_obj.charge)
+                    self.psm.orders.sell(shortage + self.charger_obj.charge - 100, 10)
+                else:
+                    self.charge_acbs(shortage)
+                shortage_after_ch = shortage - 15
+                if shortage_after_ch > 0:
+                    self.psm.orders.sell(shortage_after_ch, 10)
+            else:
+                self.psm.orders.sell(shortage, 10)
         if shortage < 0:
             self.discharge_acbs(abs(shortage))
-        accum_obj = self.addr2obj["c1"]
 
-        # if accum_obj.charge > 99.9:
-        #    self.psm
 
         if self.psm.tick < 10:
             if shortage < 0:
                 self.psm.orders.buy(abs(shortage), 1)
+
         # self.charge_acbs(15) # зарядка акб
         # self.discharge_acbs(15) # разрядка акб
         # P.S. все линии каждый вход по умолчанию включаются, здесь указывайте их конечное состояние
