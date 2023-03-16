@@ -12,6 +12,12 @@ class Station:
         self.connections = list()
 
 
+# экстренная зарядка акб на ...мВ
+Emergence_charge_acbs = 0
+# экстренная разрядка акб на ...мВ
+Emergence_DIScharge_acbs = 0
+
+
 class MyController:
     def __init__(self, psm):
         self.psm = psm
@@ -224,23 +230,61 @@ class MyController:
 
         self.psm.orders.humanize()
 
+    def calc_acb(self, shortage, acb_charge, f=False):
+        if (100 - acb_charge) >= 15:
+            if shortage < 15:
+                if f:
+                    self.charge_acbs(shortage)
+                return 0
+            else:
+                if f:
+                    self.charge_acbs(15)
+                return shortage - 15
+        else:
+            if shortage < (100 - acb_charge):
+                if f:
+                    self.charge_acbs(shortage)
+                return 0
+            else:
+                if f:
+                    self.charge_acbs(100 - acb_charge)
+                return shortage - (100 - acb_charge)
+
+    def calc_shortage(self, next_shortage, next_next_shortage, next_acb_charge):
+        if next_shortage > 0:
+            new_shortage = self.calc_acb(next_shortage, self.charger_obj.charge, f=True)
+        if next_shortage < 0:
+            self.discharge_acbs(abs(next_shortage))
+
+        if next_next_shortage > 0:
+            new_new_shortage = self.calc_acb(next_next_shortage, next_acb_charge)
+            self.psm.orders.sell(new_new_shortage, 10)
+
     def close(self):
         self.psm.save_and_exit()
 
     def run(self):
+        global Emergence_charge_acbs
+        global Emergence_DIScharge_acbs
+
         print("Тик", self.psm.tick)
         self.all_lines_on()
         shortage = self.objects_process()
         print("SHORT", shortage)
 
-        if shortage > 0:
-            self.charge_acbs(abs(shortage))
-        if shortage < 0:
-            self.discharge_acbs(abs(shortage))
-        accum_obj = self.addr2obj["c1"]
+        self.calc_shortage(next_shortage, next_next_shortage, next_acb_charge)
 
-        # if accum_obj.charge > 99.9:
-        #    self.psm
+        # if self.psm.tick < 10:
+        #     if shortage < 0:
+        #         self.psm.orders.buy(abs(shortage), 1)
+
+        # экстренная зарядка акб
+        if Emergence_charge_acbs:
+            self.charge_acbs(Emergence_charge_acbs)
+
+        # экстренная разрядка акб
+        if Emergence_DIScharge_acbs:
+            self.discharge_acbs(Emergence_DIScharge_acbs)
 
         # if self.psm.tick < 10:
         #    if shortage < 0:
@@ -250,6 +294,8 @@ class MyController:
         # P.S. все линии каждый вход по умолчанию включаются, здесь указывайте их конечное состояние
         # self.psm.orders.line_on("e5", 1) # подключение линии (1-3)
         # self.psm.orders.line_off("e5", 1) # отключение линии (1-3)
+
+
         # self.psm.orders.sell(abs(shortage)*0.8, 10) # Заявка на продажу 10,2 МВт за 2,5 руб./МВт
         # self.psm.orders.buy(abs(shortage)*0.8, 1)# Заявка на покупку 5,5 МВт за 5,1 руб./МВт
         endpoint2obj = dict()
