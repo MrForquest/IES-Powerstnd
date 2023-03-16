@@ -82,7 +82,6 @@ class MyController:
         return coef, b
 
     def id2address(self, line_id):
-
         st_type = line_id[0]
         st_num = line_id[1]
         address = ""
@@ -202,6 +201,7 @@ class MyController:
         d_eng = max(min((energy / len(self.accums)), 15), 0)
         for acb in self.accums:
             psm.orders.discharge(acb, d_eng)
+
         self.psm.orders.humanize()
 
     def close(self):
@@ -216,7 +216,17 @@ class MyController:
         print("SHORT", shortage)
 
         if shortage > 0:
-            self.charge_acbs(abs(shortage))
+            if self.charger_obj.charge < 100:
+                if self.charger_obj.charge + shortage > 100:
+                    self.charge_acbs(100 - self.charger_obj.charge)
+                    self.psm.orders.sell(shortage + self.charger_obj.charge - 100, 10)
+                else:
+                    self.charge_acbs(shortage)
+                shortage_after_ch = shortage - 15
+                if shortage_after_ch > 0:
+                    self.psm.orders.sell(shortage_after_ch, 10)
+            else:
+                self.psm.orders.sell(shortage, 10)
         if shortage < 0:
             self.discharge_acbs(abs(shortage))
         accum_obj = self.addr2obj["c1"]
