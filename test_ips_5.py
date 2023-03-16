@@ -224,7 +224,6 @@ class MyController:
                     self.charge_acbs(100 - acb_charge)
                 return shortage - (100 - acb_charge)
 
-
     def calc_shortage(self, next_shortage, next_next_shortage, next_acb_charge):
         if next_shortage > 0:
             new_shortage = self.calc_acb(next_shortage, self.charger_obj.charge, f=True)
@@ -234,8 +233,6 @@ class MyController:
         if next_next_shortage > 0:
             new_new_shortage = self.calc_acb(next_next_shortage, next_acb_charge)
             self.psm.orders.sell(new_new_shortage, 10)
-        if next_next_shortage < 0:
-            self.discharge_acbs(abs(next_shortage))
 
     def close(self):
         self.psm.save_and_exit()
