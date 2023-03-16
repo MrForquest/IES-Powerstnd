@@ -12,6 +12,7 @@ class Charger(Base):
         self.max_energy = 100
         self.charge_state = False
         self.got_energy = 0
+        self.type = "storage"
 
     def charge(self, energy):
         self.got_energy = energy

@@ -19,15 +19,28 @@ data = [
 
 def user_script(psm: Powerstand):
     for obj in psm.objects:
-        if isinstance(obj, Station):
+
+        # print("-" * 20)
+        if obj.type in ("miniA", "miniB", "main"):
+            print(obj.type, type(obj))
+            print("!" * 10)
             for line in obj.get_lines():
                 psm.orders.line_on(obj.name, line.line_id)
-    psm.orders.charge('c3', 100)
+
+    psm.orders.charge('c3', 5)
     psm.save_and_exit()
 
+
+"""
+         psm.save_and_exit()
+        for obj in psm.objects:
+            if isinstance(obj, Station):
+                for line in obj.get_lines():
+                    psm.orders.line_on(obj.name, line.line_id)
+"""
 
 # mode - "predict_money"(Дима)/"test_strategy"(Серёжа)
 random.seed(2)
 powerstand = Powerstand(config)
 powerstand.set_user_script(user_script)
-powerstand.run()
+powerstand.run(100)

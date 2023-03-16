@@ -1,10 +1,17 @@
 import pandas as pd
 
 
-def get_energy_loss(energy):
+def old_get_energy_loss(energy):
     a = min(abs(energy), 30)
     loss = ((abs(energy) * a) / 30) * 0.25
     return -loss
+
+
+def get_energy_loss(energy):
+    energy = abs(energy)
+    coef_loss = ((energy / 50) ** 2.4) * 0.6
+
+    return coef_loss
 
 
 def get_column(name, file):
@@ -18,6 +25,63 @@ def get_column(name, file):
     return values
 
 
+def get_forecasts(file):
+    from collections import namedtuple
+    Forecasts = namedtuple(
+        "Forecasts", ("hospital", "factory", "houseA", "houseB", "sun", "wind")
+    )
+    rus_names = ["Солнце", "Ветер", "Дома А", "Дома Б", "Больницы", "Заводы"]
+    df = pd.read_csv("../forecast/" + file)
+    names = df.columns
+    for name in rus_names:
+        current_names = [na for na in names if name in na]
+
+        print(current_names)
+        print(df[current_names])
+
+
+def mse(sample, truth):
+    if len(sample) != len(truth):
+        raise ValueError("Длины не совпадают")
+    sum_error = 0
+    for i in range(len(sample)):
+        err = (sample[i] - truth[i]) ** 2
+        sum_error += err
+    return sum_error / len(sample)
+
+
+def get_true_forecasts(samples, truth):
+    return
+    # truth_forecast = max(samples )
+
+
+def get_wear_loss(wear):
+    return (wear ** 2) * 0.5
+
+
+def get_wear(energy):
+    w = ((abs(energy) / 50) ** 1.9) / 2
+    return w
+
+
+def full_loss(wear, energy):
+    energy = abs(energy)
+    return (2 - (-get_wear_loss(wear) + 1) * (-get_energy_loss(energy) + 1)) * energy
+
+
+def homeA_cons(price):
+    return (0.82 * (5 - price) ** 2.6 if price < 5 else 0)
+
+
+print(homeA_cons(4), homeA_cons(6) * 6)
+
+print(get_wear_loss(0.5))
+print(get_energy_loss(40))
+print((2 - (-get_wear_loss(0.5) + 1) * (-get_energy_loss(40) + 1)) * 40)  # потребление с учётом всех потерь
+print(get_wear(23))
+# print((get_energy_loss(50) + 1) * 50)
+
+# get_forecasts("forecast_2022-03-07T13.46_17.511Z.csv")
 """
 # tree classifier to dict
 # todo do tree regressor

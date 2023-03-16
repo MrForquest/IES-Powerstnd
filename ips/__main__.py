@@ -1,4 +1,5 @@
 def interactive():
+
     import os
     import code
     import readline
@@ -17,5 +18,4 @@ def interactive():
 if __name__ == "__main__":
     # noinspection PyUnresolvedReferences
     from .__init__ import *
-
     interactive()

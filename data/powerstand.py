@@ -162,6 +162,9 @@ class Powerstand:
 
     def init_objects(self):
         forecast_num = 2  # randint(1, 9)
+        from collections import namedtuple
+
+        self.config["forecasts"]
         for obj in self.objects_n2obj.values():
             if obj.name[0] in "h":
                 obj.set_data(
@@ -222,9 +225,9 @@ class Powerstand:
                         energy = addr.get_energy(self.tick)
                         line_energy += energy
                         if isinstance(addr, FactoryOutput):
-                            self.total_money += addr.factory.get_price() * energy
+                            self.total_money += addr.factory.get_price() * abs(energy)
                         else:
-                            self.total_money += addr.get_price() * energy
+                            self.total_money += addr.get_price() * abs(energy)
 
                     else:
                         print("aaaa", addr.get_penalty(self.tick))
@@ -234,6 +237,7 @@ class Powerstand:
                     st_energy.upflow += line_energy
                 elif line_energy < 0:
                     st_energy.downflow += line_energy
+
                 st_energy.losses += get_energy_loss(line_energy)
 
             if line_energy != 0:
@@ -285,8 +289,8 @@ class Powerstand:
         net = line.net
         net.online = val
 
-    def run(self):
-        for i in range(4):
+    def run(self, num_ticks):
+        for i in range(num_ticks):
             self.tick = i
             self.user_script(self)
             print(self.__orders)
@@ -310,11 +314,10 @@ class Powerstand:
 
     def save_and_exit(self):
         for order in self.__orders:
-            print( order["orderT"] )
+            print(order["orderT"])
             if order["orderT"] == "lineOn":
                 self.set_line(order["address"], order["line"]["id"], True)
             if order["orderT"] == "lineOff":
-
                 self.set_line(order["address"], order["line"]["id"], False)
         for order in self.__orders:
             if order["orderT"] == "charge":
