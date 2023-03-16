@@ -25,7 +25,7 @@ def user_script(psm: Powerstand):
             print(obj.type, type(obj))
             print("!" * 10)
             for line in obj.get_lines():
-                psm.orders.line_off(obj.name, line.line_id)
+                psm.orders.line_on(obj.name, line.line_id)
 
     psm.orders.charge('c3', 5)
     psm.save_and_exit()

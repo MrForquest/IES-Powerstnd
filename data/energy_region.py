@@ -1,4 +1,5 @@
 import math
+from data.utilities import get_wear
 
 
 class EnergyRegion:
@@ -23,11 +24,13 @@ class EnergyRegion:
         self.online = True
 
     def calc_wear(self, energy):
-        x = abs(energy) / self.nominal_energy
-        w = pow(x, 1.9) / 6
+        # x = abs(energy) / self.nominal_energy
+        # w = pow(x, 1.9) / 6
+        w = get_wear(abs(energy))
         self.wear += w
 
     def prob_broken(self):
+        return 0
         divider = pow(math.e, 36 - 40 * self.wear) + 1
         p = 1 / divider
         return p

@@ -237,6 +237,7 @@ class Powerstand:
                     st_energy.upflow += line_energy
                 elif line_energy < 0:
                     st_energy.downflow += line_energy
+
                 st_energy.losses += get_energy_loss(line_energy)
 
             if line_energy != 0:
