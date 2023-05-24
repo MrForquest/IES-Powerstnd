@@ -66,7 +66,7 @@ def get_wear(energy):
 
 def full_loss(wear, energy):
     energy = abs(energy)
-    return (2 - (-get_wear_loss(wear) + 1) * (-get_energy_loss(energy) + 1)) * energy
+    return (1 - (-get_wear_loss(wear) + 1) * (-get_energy_loss(energy) + 1)) * energy
 
 
 def homeA_cons(price):
@@ -82,6 +82,10 @@ print(get_wear(23))
 # print((get_energy_loss(50) + 1) * 50)
 
 # get_forecasts("forecast_2022-03-07T13.46_17.511Z.csv")
+wear = 0.0838888930492075
+energy = 1.179236875306711
+print((1 - (1 - get_wear_loss(wear)) * (1 - get_energy_loss(energy + 0.5))) * (energy + 0.5))
+# 0.00500156083647822
 """
 # tree classifier to dict
 # todo do tree regressor

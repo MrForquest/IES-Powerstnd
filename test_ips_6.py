@@ -4,6 +4,21 @@ from string import ascii_uppercase, digits
 
 sec_num = digits + ascii_uppercase
 
+# Износ линии, при котором линия отключается
+CRITICAL_WEAR = 0.5
+# линии с этими объектами не отключаются при высоком износе( у них внутряняя логика )
+IGNORE_GLOBAL_LINE_OFF = ["s6", "sB"]
+# линии с этими объектами будут отключены в любом случае
+MUST_GLOBAL_LINE_OFF = ["", ""]
+# экстренная зарядка акб на ...мВ
+EMERGENCE_charge_acbs = 15
+# экстренная разрядка акб на ...мВ
+EMERGENCE_DIScharge_acbs = 0
+# После кого тика будет постоянная разрядка АКБ
+TICK_ENERGY_OUT = 50
+# После кого тика будет постоянная разрядка АКБ
+DISCHARGE_END_ENERGY = 5
+
 
 class Station:
     def __init__(self, st_obj):
@@ -16,8 +31,8 @@ class MyController:
     def __init__(self, psm):
         self.psm = psm
         self.accums = ["c1"]
-        self.prices = {"hA": 8, "h6": 5, "d4": 9}
-        self.table = "А"
+        self.prices = {"hA": 8, "h6": 5, "hI": 5}
+        self.table = "В"
 
         self.obj_types = [
             "main"  # подстанции
@@ -78,6 +93,12 @@ class MyController:
 
         # рассчитаем коэффициенты используя формулу
         return coef, b
+
+    def get_obj_st(self, obj):
+        line_obj = obj.path[0][-1]
+        obj_st = self.id2obj[line_obj.id].address[0]
+        line_num = line_obj.line
+        return obj_st, line_num
 
     def print_obj(self, obj):
         print("== Объект:", obj.id, "==")  # (тип, номер)
@@ -148,7 +169,6 @@ class MyController:
                 generation += self.wind_process(obj)
                 continue
             if obj.type == "solar":
-                print(obj_st, line_num)
                 # вычисляем прогноз солнца
                 generation += self.solar_process(obj)
                 continue
@@ -171,8 +191,14 @@ class MyController:
 
     def wind_process(self, obj):
         # вычисляем прогноз ветра
+        obj_st, line_num = self.get_obj_st(obj)
+        loc2net = {net.location: net for net in self.psm.networks.values()}
+        wind_net = loc2net[obj.path[0]]
+        if not wind_net.online:
+            self.psm.orders.line_on(obj_st, line_num)
+            return 0
         if obj.failed:
-            self.psm.orders.line_off("e5", 1)
+            self.psm.orders.line_off(obj_st, line_num)
             return 0
         else:
             if self.now_wind <= self.next_wind:
@@ -184,18 +210,16 @@ class MyController:
         """
         Обработка солнечных панелей
         """
-        line_obj = obj.path[0][-1]
-        obj_st = self.id2obj[line_obj.id].address[0]
-        line_num = line_obj.line
+        obj_st, line_num = self.get_obj_st(obj)
         # print("Реальность предыдущего:", obj.power.now.generated)
         corr_next_sun = max(0, self.next_sun - 0.5)
         zero_bold = 0.05
-        # отключение линий с панелями ночтью для починки
+        # отключение линий с панелями ночью для починки
         if (obj.power.then[self.past_tick].generated >= zero_bold) and (obj.power.now.generated <= zero_bold):
             self.psm.orders.line_off(obj_st, line_num)
             return 0
 
-        self.id2obj[obj.path[0][-1].id].address
+        # self.id2obj[obj.path[0][-1].id].address
         energy = 0
         if psm.tick >= 50:
             obj_gens = [line.generated for line in obj.power.then]
@@ -209,7 +233,6 @@ class MyController:
             else:
                 energy = obj.power.now.generated * (corr_next_sun / self.now_sun)
 
-        print([line.generated for line in obj.power.then])
         return energy
 
     def charge_acbs(self, energy):
@@ -224,27 +247,112 @@ class MyController:
 
         self.psm.orders.humanize()
 
+    def calc_acb(self, shortage, acb_charge, f=False):
+        if (100 - acb_charge) >= 15:
+            if shortage < 15:
+                if f:
+                    self.charge_acbs(shortage)
+                return 0
+            else:
+                if f:
+                    self.charge_acbs(15)
+                return shortage - 15
+        else:
+            if shortage < (100 - acb_charge):
+                if f:
+                    self.charge_acbs(shortage)
+                return 0
+            else:
+                if f:
+                    self.charge_acbs(100 - acb_charge)
+                return shortage - (100 - acb_charge)
+
+    def calc_shortage(self, next_shortage, next_next_shortage, next_acb_charge):
+        if next_shortage > 0:
+            new_shortage = self.calc_acb(next_shortage, self.charger_obj.charge, f=True)
+        if next_shortage < 0:
+            self.discharge_acbs(abs(next_shortage))
+
+        if next_next_shortage > 0:
+            new_new_shortage = self.calc_acb(next_next_shortage, next_acb_charge)
+            self.psm.orders.sell(new_new_shortage, 10)
+
+    def get_full_acb_charge(self):
+        all_charge = 0
+        for addr_acb in self.accums:
+            acb_obj = self.addr2obj[addr_acb]
+            all_charge += acb_obj.charge.now
+        return all_charge
+
     def close(self):
         self.psm.save_and_exit()
 
     def run(self):
+        global Emergence_charge_acbs
+        global Emergence_DIScharge_acbs
+        global CRITICAL_WEAR
+
         print("Тик", self.psm.tick)
         self.all_lines_on()
         shortage = self.objects_process()
         print("SHORT", shortage)
 
         if shortage > 0:
-            self.charge_acbs(abs(shortage))
-        if shortage < 0:
-            self.discharge_acbs(abs(shortage))
-        accum_obj = self.addr2obj["c1"]
+            if self.get_full_acb_charge() >= 99.9 * len(self.accums):
+                self.psm.orders.sell(abs(shortage) * 0.7, 10)
+            else:
+                self.charge_acbs(abs(shortage) * 0.9)
+        elif shortage < 0:
+            self.discharge_acbs(abs(shortage) * 1.1)
 
-        # if accum_obj.charge > 99.9:
-        #    self.psm
+        print("Заряд аккумов:", self.get_full_acb_charge())
+
+        # адрес линии в объекты
+        endpoint2obj = dict()
+        for obj in self.psm.objects:
+            endpoint = obj.path[-1]
+            if not (endpoint in endpoint2obj.keys()):
+                endpoint2obj[endpoint] = list()
+            endpoint2obj[endpoint].append(obj)
+
+        # Если слишком высокий износ, то отключаем(если объекта нет в игнроре)
+        for i, net in self.psm.networks.items():
+            if net.location:
+                if net.wear > CRITICAL_WEAR:
+                    location = net.location
+                    CAN_OFF = True
+                    for obj in endpoint2obj[location]:
+                        if obj.address[0] in IGNORE_GLOBAL_LINE_OFF:
+                            # print(obj, "NOT OFF FOREVER")
+                            CAN_OFF = False
+                            break
+                    if CAN_OFF:
+                        line_obj = location[-1]
+                        st_addr = self.id2obj[line_obj.id].address[0]
+                        self.psm.orders.line_off(st_addr, line_obj.line)
+
+        # Отключаем объекты, которые ОБЯЗАТЕЛЬНО выключить
+        for obj in self.psm.objects:
+            if obj.type == "main":
+                continue
+
+            if obj.address[0] in MUST_GLOBAL_LINE_OFF:
+                obj_st, line_num = self.get_obj_st(obj)
+                self.psm.orders.line_off(obj_st, line_num)
+
+        # Ручная работа с АКБ
+        if EMERGENCE_charge_acbs:
+            self.charge_acbs(EMERGENCE_charge_acbs)
+        if EMERGENCE_DIScharge_acbs:
+            self.discharge_acbs(EMERGENCE_DIScharge_acbs)
 
         # if self.psm.tick < 10:
         #    if shortage < 0:
         #        self.psm.orders.buy(abs(shortage), 1)
+
+        if self.psm.tick >= TICK_ENERGY_OUT:
+            self.discharge_acbs(DISCHARGE_END_ENERGY)
+
         # self.charge_acbs(15) # зарядка акб
         # self.discharge_acbs(15) # разрядка акб
         # P.S. все линии каждый вход по умолчанию включаются, здесь указывайте их конечное состояние
@@ -252,38 +360,11 @@ class MyController:
         # self.psm.orders.line_off("e5", 1) # отключение линии (1-3)
         # self.psm.orders.sell(abs(shortage)*0.8, 10) # Заявка на продажу 10,2 МВт за 2,5 руб./МВт
         # self.psm.orders.buy(abs(shortage)*0.8, 1)# Заявка на покупку 5,5 МВт за 5,1 руб./МВт
-        endpoint2obj = dict()
-        for obj in self.psm.objects:
-            # print(self.id2address(obj.path[0][-1].id), "asdasads")
-            # print(obj.path, end=" ")
-            endpoint = obj.path[-1]
-            if not (endpoint in endpoint2obj.keys()):
-                endpoint2obj[endpoint] = list()
-            endpoint2obj[endpoint].append(obj)
-            # self.print_obj(obj)
-
-        # self.print_public_info()
-        # self.topo = {tuple(self.id2obj.get(loc[0], "error") for loc in c.location): i for (i, c) in
-        #             self.psm.networks.items()}
-        """
-        print(endpoint2obj.get(tuple())[0].path)
-        for i, net in self.psm.networks.items():
-            print(net.location)
-            # print([self.id2obj.get(loc[0]).address for loc in net.location])
-            objs = endpoint2obj.get(net.location, "error")
-            if isinstance(objs, list):
-                print([obj.address for obj in objs])
-            else:
-                print("error")
-            print()
-        # print(self.topo.keys())
-        """
-        # self.objects_process()
+        self.print_public_info()
         print(self.psm.orders.humanize())
 
 
-for i in range(2, 100):
-    psm = ips.from_log("logs/game4.json", i)
-    controller = MyController(psm)
-    controller.run()
-    controller  # .close()
+psm = ips.init()
+controller = MyController(psm)
+controller.run()
+controller.close()

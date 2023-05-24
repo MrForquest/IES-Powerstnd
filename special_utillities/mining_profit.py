@@ -13,6 +13,10 @@ def homeA_cons(price):
     return (0.82 * (5 - price) ** 2.6 if price < 5 else 0)
 
 
+def homeB_cons(price):
+    return (0.24 * (9 - price) ** 2.2 if price < 8 else 0)
+
+
 def get_wear_loss(wear):
     return (wear ** 2) * 0.5
 
@@ -40,9 +44,9 @@ def run(price, forecast, wear_bold=1):
             turn_on = True
         if not turn_on:
             wear = max(0, wear - 1)
-            energy = val + homeA_cons(price)
+            energy = val + homeB_cons(price)
             money -= energy * price * 2
-        energy = val + homeA_cons(price)
+        energy = val + homeB_cons(price)
         energy_loss = full_loss(wear, energy)
         all_energy = energy + energy_loss
         total_cons += all_energy
@@ -76,10 +80,11 @@ forecast = [1.72733370974882, 1.1023404933645313, 0.8257151476481921, 0.85068243
             4.578211075088921, 4.090472301712667, 3.399783848241042, 2.8746592867518377, 2.6481402385548822,
             2.262063853093361, 1.7079916374985125, 1.017279417978716, 0.9199757066987317, 0.7502175805999975
             ]
-money, total_cons, wear, price, total_energy_cons = run(2.5, forecast, wear_bold=1)
+money, total_cons, wear, price, total_energy_cons = run(6.8, forecast, wear_bold=1)
 total_energy_cons = np.array(total_energy_cons)
+
 # print(money, total_cons, total_energy_cons.max())
-print(sum(forecast) * 5)
+print(sum(forecast) * 6.8)
 # exit()
 moneys = list()
 prices = list()
