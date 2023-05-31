@@ -534,7 +534,7 @@ class MyController:
 
 
 for i in range(37, 38):
-    psm = ips.from_log("logs/predfinal2.json", i)
+    psm = ips.from_log("../../logs/predfinal2.json", i)
     controller = MyController(psm)
     controller.run()
     controller  # .close()

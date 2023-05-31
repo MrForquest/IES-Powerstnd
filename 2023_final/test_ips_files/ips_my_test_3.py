@@ -14,7 +14,7 @@ for I in range(2, 100):
         "hospital",  # заводы
         "storage",  # накопители
     ]
-    psm = ips.from_log("logs/game.json", step=I)
+    psm = ips.from_log("../../logs/game.json", step=I)
 
     station_names = {"main", "miniA", "miniB"}
     past_tick = max(psm.tick - 1, 0)

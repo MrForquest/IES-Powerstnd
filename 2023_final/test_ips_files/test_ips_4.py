@@ -235,7 +235,7 @@ class MyController:
 # if net.wear >= 0.85:
 #    psm.orders.line_off(*net.location)
 for i in range(2, 100):
-    psm = ips.from_log("logs/game.json", step=i)
+    psm = ips.from_log("../../logs/game.json", step=i)
     controller = MyController(psm)
     controller.run()
     controller

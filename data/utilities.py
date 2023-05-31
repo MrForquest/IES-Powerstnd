@@ -1,5 +1,9 @@
 import pandas as pd
 
+import os
+
+DIR = os.path.dirname(__file__)
+
 
 def old_get_energy_loss(energy):
     a = min(abs(energy), 30)
@@ -23,6 +27,10 @@ def get_column(name, file):
     # print(df[name])
     values.extend(df[name])
     return values
+
+
+def get_forecast(name, file):
+    pass
 
 
 def get_forecasts(file):
@@ -73,19 +81,20 @@ def homeA_cons(price):
     return (0.82 * (5 - price) ** 2.6 if price < 5 else 0)
 
 
-print(homeA_cons(4), homeA_cons(6) * 6)
+if __name__ == "__main__":
+    print(homeA_cons(4), homeA_cons(6) * 6)
 
-print(get_wear_loss(0.5))
-print(get_energy_loss(40))
-print((2 - (-get_wear_loss(0.5) + 1) * (-get_energy_loss(40) + 1)) * 40)  # потребление с учётом всех потерь
-print(get_wear(23))
-# print((get_energy_loss(50) + 1) * 50)
+    print(get_wear_loss(0.5))
+    print(get_energy_loss(40))
+    print((2 - (-get_wear_loss(0.5) + 1) * (-get_energy_loss(40) + 1)) * 40)  # потребление с учётом всех потерь
+    print(get_wear(23))
+    # print((get_energy_loss(50) + 1) * 50)
 
-# get_forecasts("forecast_2022-03-07T13.46_17.511Z.csv")
-wear = 0.0838888930492075
-energy = 1.179236875306711
-print((1 - (1 - get_wear_loss(wear)) * (1 - get_energy_loss(energy + 0.5))) * (energy + 0.5))
-# 0.00500156083647822
+    # get_forecasts("forecast_2022-03-07T13.46_17.511Z.csv")
+    wear = 0.0838888930492075
+    energy = 1.179236875306711
+    print((1 - (1 - get_wear_loss(wear)) * (1 - get_energy_loss(energy + 0.5))) * (energy + 0.5))
+    # 0.00500156083647822
 """
 # tree classifier to dict
 # todo do tree regressor

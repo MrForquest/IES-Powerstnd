@@ -329,7 +329,7 @@ class MyController:
 
 
 for i in range(2, 100):
-    psm = ips.from_log("logs/game4.json", i)
+    psm = ips.from_log("../../logs/game4.json", i)
     controller = MyController(psm)
     controller.run()
     controller  # .close()
