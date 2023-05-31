@@ -1,4 +1,4 @@
-from data.line import Line
+from powerstand.data.line import Line
 
 
 class Base:

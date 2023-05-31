@@ -1,4 +1,4 @@
-from data.factory import FactoryOutput, Factory
+from powerstand.data.factory import FactoryOutput, Factory
 
 
 class Hospital(Factory):

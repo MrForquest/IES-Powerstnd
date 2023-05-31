@@ -13,7 +13,7 @@ obj_types = [
     "hospital",  # заводы
     "storage",  # накопители
 ]
-psm = ips.from_log("../logs/game.json", step=60)
+psm = ips.from_log("../../logs/game.json", step=60)
 
 station_names = {"main", "miniA", "miniB"}
 past_tick = max(psm.tick - 1, 0)

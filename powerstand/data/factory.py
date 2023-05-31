@@ -1,5 +1,5 @@
-from data.base import Base
-from data.prosumer import Prosumer
+from powerstand.data.base import Base
+from powerstand.data.prosumer import Prosumer
 
 from config import config
 

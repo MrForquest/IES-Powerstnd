@@ -1,6 +1,6 @@
-from data.base import Base
-from data.line import Line
-from data.energy_region import EnergyRegion
+from powerstand.data.base import Base
+from powerstand.data.line import Line
+from powerstand.data.energy_region import EnergyRegion
 from typing import List
 
 

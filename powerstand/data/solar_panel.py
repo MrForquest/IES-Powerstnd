@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from data.base import Base
-from data.utilities import get_column
+from powerstand.data.base import Base
 from config import config
 
 

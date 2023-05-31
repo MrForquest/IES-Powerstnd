@@ -1,4 +1,4 @@
-from data.base import Base
+from powerstand.data.base import Base
 
 
 class Charger(Base):

@@ -1,7 +1,5 @@
-import json
 import random
-from data.powerstand import Powerstand
-from data.station import Station
+from powerstand.data.powerstand import Powerstand
 from config import config
 
 """

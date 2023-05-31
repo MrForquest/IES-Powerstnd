@@ -1,5 +1,5 @@
 import math
-from data.utilities import get_wear
+from powerstand.data.utilities import get_wear
 
 
 class EnergyRegion:
