@@ -1,147 +1,158 @@
+"""Command line entry point for the energy company simulator."""
+from __future__ import annotations
+
+import argparse
 import json
-from typing import List
+from pathlib import Path
+from typing import Any, Dict, List
 
-data = [
-    {"address": "h1", "station": "M1", "line": 1},
-    {"address": "t1", "station": "M1", "line": 2},
-    {"address": "m2", "station": "M1", "line": 3},
-    {"address": "h2", "station": "m2", "line": 1},
-    {"address": "h3", "station": "m2", "line": 2},
-    {"address": "h4", "station": "m2", "line": 2},
-]
+from .simulator.simulation import Simulation, SimulationConfig, SimulationReport
 
 
-class Line:
-    def __init__(self, station, line_id, address=None):
-        if address is None:
-            address = list()
-        self.station = station
-        self.address = address
-        self.line_id = line_id
-
-    def append_address(self, address):
-        self.address.append(address)
-
-    def get_station(self):
-        return self.station
-
-    def get_address(self):
-        return self.address
-
-    def get_line_id(self):
-        return self.line_id
-
-    def __repr__(self):
-        return f"Line{self.line_id} {self.station} to {self.address}"
-
-
-class Base:
-    def __init__(self, name, connections):
-        self.name = name
-        self.connections = connections
-
-    def append_connection(self, line: Line):
-        self.connections.append(line)
-
-
-class Prosumer(Base):
-    def __init__(self, name, connections=None):
-        if connections is None:
-            connections = list()
-        super().__init__(name, connections)
-        self.connections = connections
-
-    def get_energy(self):
-        return 0
-
-    def __repr__(self):
-        return f'Prosumer("{self.name}")'
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Процедурный симулятор управления энергокомпанией.",
+    )
+    parser.add_argument("--years", type=int, default=10, help="Продолжительность симуляции в годах.")
+    parser.add_argument(
+        "--months-per-year",
+        type=int,
+        default=12,
+        help="Количество игровых тиков в одном году.",
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Базовое значение генератора случайных чисел.")
+    parser.add_argument("--bots", type=int, default=2, help="Количество конкурирующих компаний-ботов.")
+    parser.add_argument(
+        "--starting-funds",
+        type=float,
+        default=5_000_000.0,
+        help="Начальный капитал каждой компании.",
+    )
+    parser.add_argument(
+        "--locations",
+        type=int,
+        default=6,
+        help="Количество локаций, доступных в мире.",
+    )
+    parser.add_argument(
+        "--player-name",
+        type=str,
+        default="PlayerCo",
+        help="Название компании игрока.",
+    )
+    parser.add_argument(
+        "--details",
+        action="store_true",
+        help="Показать краткую сводку по месяцам.",
+    )
+    parser.add_argument(
+        "--export",
+        type=Path,
+        help="Путь к JSON-файлу для сохранения результатов симуляции.",
+    )
+    return parser
 
 
-class Station(Base):
-    def __init__(self, name, connections=None, lines_=None):
-        if connections is None:
-            connections = list()
-        if lines_ is None:
-            lines_ = list()
-        super().__init__(name, connections)
-        self.lines = lines_
-
-    def set_lines(self, lines: List[Line]):
-        self.lines = lines
-
-    def get_lines(self):
-        return self.lines
-
-    def append_line(self, line: Line):
-        self.lines.append(line)
-
-    def __repr__(self):
-        return f'Station("{self.name}")'
-
-
-def get_energy_loss(energy):
-    return energy * 0.1
-
-
-class Powerstand:
-    def __init__(self, topology, game_info=None):
-        names = list()
-        for d in topology:
-            names.extend((d["station"], d["address"]))
-        self.all_names = list(set(names))
-        self.st_names = list(set([na for na in names if na[0] in ("m", "e", "M")]))
-        self.prosumer_names = list(set([na for na in names if na[0] not in ("m", "e")]))
-        self.all_stations = []
-        self.prosumers = [
-            Prosumer(na) for na in self.prosumer_names if na[0] not in ("m", "e")
-        ]
-        self.all_stations = [Station(stn) for stn in self.st_names]
-        self.objects = {obj.name: obj for obj in (self.prosumers + self.all_stations)}
-        self.main_st = filter(
-            lambda stn_: stn_.name == "M1", self.all_stations
-        ).__next__()
-        self.all_lines = list()
-        line_names = list(
-            set([" ".join((line["station"], str(line["line"]))) for line in topology])
+def render_standings(report: SimulationReport) -> str:
+    lines: List[str] = []
+    header = f"{'Компания':<16} {'Капитал':>12} {'Репутация':>10} {'Обновл. доля':>13}"
+    lines.append(header)
+    lines.append("-" * len(header))
+    for company in report.standings():
+        snapshot = company.snapshot()
+        renewable = f"{snapshot.renewable_share:.2f}"
+        lines.append(
+            f"{company.name:<16} {company.funds:>12,.0f} {company.reputation:>10.2f} {renewable:>13}"
         )
-        for line_name in line_names:
-            st_name, line_id = line_name.split()
-            line_id = int(line_id)
-            lines = filter(
-                lambda li: li["station"] == st_name and li["line"] == line_id, topology
+    return "\n".join(lines)
+
+
+def summarise_history(history: List[Dict[str, float]]) -> Dict[str, float]:
+    totals = {"revenue": 0.0, "expenses": 0.0, "energy": 0.0, "waste": 0.0}
+    if not history:
+        return totals
+    for record in history:
+        totals["revenue"] += record.get("revenue", 0.0)
+        totals["expenses"] += record.get("expenses", 0.0)
+        totals["energy"] += record.get("energy", 0.0)
+        totals["waste"] += record.get("waste", 0.0)
+    totals["profit"] = totals["revenue"] - totals["expenses"]
+    return totals
+
+
+def main(argv: List[str] | None = None) -> None:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    config = SimulationConfig(
+        years=args.years,
+        months_per_year=args.months_per_year,
+        seed=args.seed,
+        bots=args.bots,
+        starting_funds=args.starting_funds,
+        starting_locations=args.locations,
+        player_name=args.player_name,
+    )
+    simulation = Simulation(config)
+    report = simulation.run()
+    print("=" * 72)
+    print(f"Симуляция завершена. Итоговый год: {config.base_year + config.years - 1}")
+    print(render_standings(report))
+
+    for company in report.companies:
+        totals = summarise_history(company.history)
+        print()
+        print(f"Компания {company.name}:")
+        print(
+            f"  Совокупная выручка: {totals['revenue']:,.0f} | Расходы: {totals['expenses']:,.0f} | Прибыль: {totals['profit']:,.0f}"
+        )
+        print(
+            f"  Выпущено энергии: {totals['energy']:,.0f} МВт⋅ч | Отходы: {totals['waste']:,.0f} усл. ед."
+        )
+        if company.active_locations:
+            print(f"  Освоенные локации: {', '.join(company.active_locations)}")
+        print(f"  Действующих контрактов: {len(company.contracts)}")
+
+    if args.details:
+        print("\nКраткий поквартальный отчёт:")
+        for log in report.monthly_logs:
+            if log.month_index % max(1, args.months_per_year // 4) != 0:
+                continue
+            best = max(log.company_reports.items(), key=lambda item: item[1].get("revenue", 0.0))
+            print(
+                f"  Месяц {log.month_index:02d} ({log.year}): лидирует {best[0]}"
+                f" с выручкой {best[1].get('revenue', 0.0):,.0f}"
             )
-            station = self.get_object(st_name)
-            line_obj = Line(station, line_id=line_id)
-            for line in lines:
-                address = self.get_object(line["address"])
-                line_obj.append_address(address)
-                address.append_connection(line_obj)
-            station.append_line(line_obj)
-            self.all_lines.append(line_obj)
+            for grant in log.grants:
+                print(f"    {grant}")
 
-    def get_object(self, name):
-        return self.objects[name]
+    if args.export:
+        payload: Dict[str, Any] = {
+            "config": vars(config),
+            "standings": [
+                {
+                    "name": company.name,
+                    "funds": company.funds,
+                    "reputation": company.reputation,
+                    "renewable_share": company.snapshot().renewable_share,
+                    "history": company.history,
+                }
+                for company in report.companies
+            ],
+            "grants": [
+                {
+                    "month": log.month_index,
+                    "year": log.year,
+                    "events": log.grants,
+                }
+                for log in report.monthly_logs
+                if log.grants
+            ],
+        }
+        args.export.parent.mkdir(parents=True, exist_ok=True)
+        args.export.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"\nДанные симуляции сохранены в {args.export}")
 
-    def tree_traversal_rec(self, station):
-        sum_energy = 0
-        for line in station.get_lines():
-            address = line.get_address()
-            print(address)
-            if issubclass(address[0].__class__, Station):
-                sum_energy += self.tree_traversal_rec(address[0])
-            else:
-                line_energy = 0
-                for addr in address:
-                    line_energy += addr.get_energy()
-                line_energy -= get_energy_loss(line_energy)
-                sum_energy += line_energy
-        return sum_energy
 
-    def run(self):
-        print(self.all_lines)
-        self.tree_traversal_rec(self.main_st)
-
-
-powerstand = Powerstand(data)
-powerstand.run()
+if __name__ == "__main__":
+    main()
